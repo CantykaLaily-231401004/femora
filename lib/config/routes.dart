@@ -1,4 +1,5 @@
 import 'package:femora/screens/onboarding_screen.dart';
+import 'package:femora/screens/auth/signup_screen.dart';
 import 'package:femora/screens/splash_screen.dart';
 import 'package:go_router/go_router.dart';
 
@@ -6,11 +7,12 @@ import 'package:go_router/go_router.dart';
 class AppRoutes {
   static const String splash = '/';
   static const String onboarding = '/onboarding';
+  static const String signup = '/signup';
 }
 
 // Konfigurasi GoRouter terpusat di sini
 final GoRouter router = GoRouter(
-  initialLocation: AppRoutes.splash, // Mulai dari splash screen
+  initialLocation: AppRoutes.splash,
   routes: [
     GoRoute(
       path: AppRoutes.splash,
@@ -22,19 +24,10 @@ final GoRouter router = GoRouter(
       name: 'onboarding',
       builder: (context, state) => const OnboardingScreen(),
     ),
-    // Tambahkan rute lain di sini nanti, contoh:
-    // GoRoute(
-    //   path: '/login',
-    //   name: 'login',
-    //   builder: (context, state) => const LoginScreen(),
-    // ),
+    GoRoute(
+      path: AppRoutes.signup,
+      name: 'signup',
+      builder: (context, state) => const SignUpScreen(),
+    ),
   ],
 );
-
-class Text {
-  const Text();
-}
-
-class Center {
-  const Center();
-}

@@ -3,6 +3,7 @@ import 'package:femora/screens/onboarding/widgets/onboarding_next_button.dart';
 import 'package:femora/screens/onboarding/widgets/onboarding_page.dart';
 import 'package:femora/screens/onboarding/widgets/page_indicator.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({Key? key}) : super(key: key);
@@ -58,8 +59,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   void _navigateToNextScreen() {
-    // TODO: Gunakan GoRouter untuk navigasi ke halaman login/signup
-    // context.go('/login');
+    context.go('/signup');
   }
 
   @override
