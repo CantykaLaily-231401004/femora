@@ -1,9 +1,12 @@
-import 'package:femora/models/onboarding_content.dart';
-import 'package:femora/screens/onboarding/widgets/onboarding_next_button.dart';
-import 'package:femora/screens/onboarding/widgets/onboarding_page.dart';
-import 'package:femora/screens/onboarding/widgets/page_indicator.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:femora/models/onboarding_content.dart';
+import 'package:femora/config/constants.dart';
+import 'package:femora/core/utils/size_config.dart';
+import 'package:femora/screens/onboarding/widgets/onboarding_page.dart';
+import 'package:femora/screens/onboarding/widgets/page_indicator.dart';
+import 'package:femora/core/widgets/buttons/primary_button.dart';
+import 'package:femora/config/routes.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({Key? key}) : super(key: key);
@@ -13,7 +16,7 @@ class OnboardingScreen extends StatefulWidget {
 }
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
-  final PageController _pageController = PageController();
+  late PageController _pageController;
   int _currentPage = 0;
 
   // Data untuk setiap halaman onboarding
@@ -21,19 +24,25 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     OnboardingContent(
       title: 'Lacak Siklusmu dengan Mudah',
       description: 'Tetap pantau periode menstruasimu dengan prediksi dan pengingat yang akurat.',
-      imagePath: 'assets/images/onboarding1.png',
+      imagePath: AppAssets.onboarding1,
     ),
     OnboardingContent(
       title: 'Pahami Tubuhmu Lebih Baik',
       description: 'Catat suasana hati, gejala, dan tingkat energi untuk mendapatkan wawasan yang dipersonalisasi.',
-      imagePath: 'assets/images/onboarding2.png',
+      imagePath: AppAssets.onboarding2,
     ),
     OnboardingContent(
       title: 'Pendamping Kesehatan Pribadimu',
       description: 'Dapatkan tips, pengingat, dan rekomendasi perawatan diri yang dirancang khusus untukmu.',
-      imagePath: 'assets/images/onboarding3.png',
+      imagePath: AppAssets.onboarding3,
     ),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+  }
 
   @override
   void dispose() {
@@ -50,27 +59,29 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   void _nextPage() {
     if (_currentPage < _pages.length - 1) {
       _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
+        duration: AppDurations.normal,
         curve: Curves.easeInOut,
       );
     } else {
-      _navigateToNextScreen();
+      _navigateToSignUp();
     }
   }
 
-  void _navigateToNextScreen() {
-    context.go('/signup');
+  void _navigateToSignUp() {
+    context.go(AppRoutes.signup);
   }
 
   @override
   Widget build(BuildContext context) {
+    SizeConfig.init(context);
+    
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.white,
       body: SafeArea(
         child: Column(
           children: [
             // Tombol Lewati (Skip)
-            _buildTopBar(),
+            _buildSkipButton(),
 
             // Konten PageView
             Expanded(
@@ -78,6 +89,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 controller: _pageController,
                 onPageChanged: _onPageChanged,
                 itemCount: _pages.length,
+                physics: const BouncingScrollPhysics(),
                 itemBuilder: (context, index) {
                   return OnboardingPage(content: _pages[index]);
                 },
@@ -85,34 +97,50 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
 
             // Indikator Halaman
-            PageIndicator(currentPage: _currentPage, pageCount: _pages.length),
+            PageIndicator(
+              currentPage: _currentPage,
+              pageCount: _pages.length,
+            ),
 
-            const SizedBox(height: 20),
+            SizedBox(height: SizeConfig.getHeight(2.5)),
 
             // Tombol Lanjutkan
-            OnboardingNextButton(onPressed: _nextPage),
+            Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: SizeConfig.getWidth(5),
+              ),
+              child: PrimaryButton(
+                text: 'Lanjutkan',
+                onPressed: _nextPage,
+                width: SizeConfig.getWidth(40),
+                height: SizeConfig.getHeight(6.5),
+              ),
+            ),
 
-            const SizedBox(height: 50),
+            SizedBox(height: SizeConfig.getHeight(6)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildTopBar() {
+  Widget _buildSkipButton() {
     return Align(
       alignment: Alignment.centerRight,
       child: TextButton(
-        onPressed: _navigateToNextScreen,
+        onPressed: _navigateToSignUp,
         style: TextButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          padding: EdgeInsets.symmetric(
+            horizontal: SizeConfig.getWidth(6),
+            vertical: SizeConfig.getHeight(2),
+          ),
         ),
-        child: const Text(
+        child: Text(
           'Lewati',
           style: TextStyle(
-            color: Color(0xFFDC143C),
-            fontSize: 16,
-            fontFamily: 'Poppins',
+            color: AppColors.primaryDark,
+            fontSize: SizeConfig.getFontSize(16),
+            fontFamily: AppTextStyles.fontFamily,
             fontWeight: FontWeight.w500,
           ),
         ),
