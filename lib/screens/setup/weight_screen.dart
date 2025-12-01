@@ -8,17 +8,17 @@ import 'package:femora/widgets/primary_button.dart';
 import 'package:femora/widgets/setup_progress_indicator.dart';
 import 'package:femora/widgets/size_config.dart';
 
-class PeriodDurationScreen extends StatefulWidget {
-  const PeriodDurationScreen({Key? key}) : super(key: key);
+class WeightScreen extends StatefulWidget {
+  const WeightScreen({Key? key}) : super(key: key);
 
   @override
-  State<PeriodDurationScreen> createState() => _PeriodDurationScreenState();
+  State<WeightScreen> createState() => _WeightScreenState();
 }
 
-class _PeriodDurationScreenState extends State<PeriodDurationScreen> {
-  int _selectedDuration = 3;
-  final int _minDuration = 1;
-  final int _maxDuration = 30;
+class _WeightScreenState extends State<WeightScreen> {
+  int _selectedWeight = 53;
+  final int _minWeight = 10;
+  final int _maxWeight = 150;
 
   @override
   Widget build(BuildContext context) {
@@ -38,10 +38,10 @@ class _PeriodDurationScreenState extends State<PeriodDurationScreen> {
               ),
             ),
             SizedBox(height: SizeConfig.getHeight(2)),
-            const SetupProgressIndicator(currentStep: 3, totalSteps: 5),
+            const SetupProgressIndicator(currentStep: 2, totalSteps: 5),
             const SizedBox(height: 20),
             Text(
-              'Durasi Menstruasi\nAnda',
+              'Beritahu Kami\nBerat Badan Anda',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontFamily: AppTextStyles.fontFamily,
@@ -62,25 +62,25 @@ class _PeriodDurationScreenState extends State<PeriodDurationScreen> {
                     width: SizeConfig.getWidth(30),
                     child: CupertinoPicker(
                       scrollController: FixedExtentScrollController(
-                        initialItem: _selectedDuration - _minDuration,
+                        initialItem: _selectedWeight - _minWeight,
                       ),
                       itemExtent: 50,
                       onSelectedItemChanged: (int index) {
                         setState(() {
-                          _selectedDuration = index + _minDuration;
+                          _selectedWeight = index + _minWeight;
                         });
                       },
-                      children: List<Widget>.generate(_maxDuration - _minDuration + 1, (int index) {
-                        final int currentDuration = index + _minDuration;
+                      children: List<Widget>.generate(_maxWeight - _minWeight + 1, (int index) {
+                        final int currentWeight = index + _minWeight;
                         return Center(
                           child: Text(
-                            '$currentDuration',
+                            '$currentWeight',
                             style: TextStyle(
-                              color: _selectedDuration == currentDuration
+                              color: _selectedWeight == currentWeight
                                   ? AppColors.primary
                                   : AppColors.textSecondary,
-                              fontSize: _selectedDuration == currentDuration ? 32 : 26,
-                              fontWeight: _selectedDuration == currentDuration
+                              fontSize: _selectedWeight == currentWeight ? 32 : 26,
+                              fontWeight: _selectedWeight == currentWeight
                                   ? FontWeight.w600
                                   : FontWeight.w400,
                             ),
@@ -91,7 +91,7 @@ class _PeriodDurationScreenState extends State<PeriodDurationScreen> {
                   ),
                   SizedBox(width: SizeConfig.getWidth(2)),
                   Text(
-                    'Hari',
+                    'Kg',
                     style: TextStyle(
                       color: AppColors.primary,
                       fontSize: SizeConfig.getFontSize(22),
@@ -107,7 +107,7 @@ class _PeriodDurationScreenState extends State<PeriodDurationScreen> {
               child: PrimaryButton(
                 text: 'Lanjutkan',
                 onPressed: () {
-                  context.push(AppRoutes.cycleLength);
+                  context.push(AppRoutes.periodDuration);
                 },
               ),
             ),

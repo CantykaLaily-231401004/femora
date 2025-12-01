@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:femora/core/utils/size_config.dart';
-import 'package:femora/core/widgets/calendar/custom_calendar.dart';
+import 'package:femora/widgets/custom_calendar.dart';
 import 'package:femora/config/constants.dart';
 
 class HomeCalendarCard extends StatefulWidget {
@@ -47,20 +46,15 @@ class _HomeCalendarCardState extends State<HomeCalendarCard> {
             focusedDay: _focusedDay,
             selectedDay: _selectedDay,
             onDaySelected: (selectedDay, focusedDay) {
-              setState(() {
-                _selectedDay = selectedDay;
-                _focusedDay = focusedDay;
-              });
+              // Hanya panggil callback, hapus setState untuk menghindari konflik
               widget.onDateSelected(selectedDay);
             },
             isTodayCheckedIn: widget.isCheckedIn,
           ),
           const SizedBox(height: 15),
-          // Legend and Edit Button
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Legend
               Expanded(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.start,
@@ -69,11 +63,10 @@ class _HomeCalendarCardState extends State<HomeCalendarCard> {
                     const SizedBox(width: 8),
                     _buildLegendItem(const Color(0x6BFFB5A5), 'Prediksi'),
                     const SizedBox(width: 8),
-                    _buildLegendItem(null, 'Mood'),
+                    _buildLegendItem(null, 'Mood', isMood: true),
                   ],
                 ),
               ),
-              // Edit Button
               GestureDetector(
                 onTap: widget.onEditCycle,
                 child: const Text(
@@ -85,6 +78,7 @@ class _HomeCalendarCardState extends State<HomeCalendarCard> {
                     fontFamily: 'Poppins',
                     fontWeight: FontWeight.w700,
                     decoration: TextDecoration.underline,
+                    decorationColor: Color(0xFFF75270),
                   ),
                 ),
               ),
@@ -95,11 +89,13 @@ class _HomeCalendarCardState extends State<HomeCalendarCard> {
     );
   }
 
-  Widget _buildLegendItem(Color? color, String label) {
+  Widget _buildLegendItem(Color? color, String label, {bool isMood = false}) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (color != null)
+        if (isMood)
+          const Text('😊', style: TextStyle(fontSize: 10))
+        else if (color != null)
           Container(
             width: 10,
             height: 10,
@@ -109,10 +105,11 @@ class _HomeCalendarCardState extends State<HomeCalendarCard> {
               shape: BoxShape.circle,
             ),
           ),
+        const SizedBox(width: 4),
         Text(
           label,
           style: const TextStyle(
-            color: Colors.black,
+            color: Color(0xFF6B6B6B),
             fontSize: 10,
             fontFamily: 'Poppins',
             fontWeight: FontWeight.w400,

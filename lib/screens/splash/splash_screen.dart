@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:femora/config/constants.dart';
 import 'package:femora/config/routes.dart';
-import 'package:femora/core/utils/size_config.dart';
-import 'package:femora/core/widgets/common/gradient_background.dart';
+import 'package:femora/widgets/size_config.dart';
+import 'package:femora/widgets/gradient_background.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
@@ -39,7 +39,7 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
     
     // Navigate to onboarding
-    context.go(AppRoutes.onboarding);
+    context.replace(AppRoutes.onboarding);
   }
 
   @override
@@ -63,9 +63,9 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget _buildCurrentScreen() {
     switch (_currentScreen) {
       case 1:
-        return const _SplashScreenTwo(key: ValueKey('splash2'));
+        return _SplashScreenTwo(key: const ValueKey('splash2'));
       case 2:
-        return const _SplashScreenThree(key: ValueKey('splash3'));
+        return _SplashScreenThree(key: const ValueKey('splash3'));
       default:
         return const _SplashScreenOne(key: ValueKey('splash1'));
     }
@@ -78,19 +78,19 @@ class _SplashScreenOne extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FullGradientBackground(
-      colors: const [
-        AppColors.primaryLight,
-        AppColors.primary,
+    return const FullGradientBackground(
+      colors: [
+        Color(0xFFF7CAC9),
+        Color(0xFFF75270),
       ],
-      child: const SizedBox.expand(),
+      child: SizedBox.expand(),
     );
   }
 }
 
 /// Splash 2: Logo + tagline dengan gradient background
 class _SplashScreenTwo extends StatelessWidget {
-  const _SplashScreenTwo({Key? key}) : super(key: key);
+  _SplashScreenTwo({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -98,8 +98,8 @@ class _SplashScreenTwo extends StatelessWidget {
     
     return FullGradientBackground(
       colors: const [
-        AppColors.primaryLight,
-        AppColors.primary,
+        Color(0xFFF7CAC9),
+        Color(0xFFF75270),
       ],
       child: SafeArea(
         child: Center(
@@ -140,7 +140,7 @@ class _SplashScreenTwo extends StatelessWidget {
 
 /// Splash 3: Logo + tagline dengan white background
 class _SplashScreenThree extends StatelessWidget {
-  const _SplashScreenThree({Key? key}) : super(key: key);
+  _SplashScreenThree({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:femora/models/onboarding_content.dart';
 import 'package:femora/config/constants.dart';
-import 'package:femora/core/utils/size_config.dart';
-import 'package:femora/screens/onboarding/widgets/onboarding_page.dart';
-import 'package:femora/screens/onboarding/widgets/page_indicator.dart';
-import 'package:femora/core/widgets/buttons/primary_button.dart';
+import 'package:femora/widgets/size_config.dart';
+import 'package:femora/widgets/primary_button.dart';
 import 'package:femora/config/routes.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -19,7 +17,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   late PageController _pageController;
   int _currentPage = 0;
 
-  // Data untuk setiap halaman onboarding
   final List<OnboardingContent> _pages = [
     OnboardingContent(
       title: 'Lacak Siklusmu dengan Mudah',
@@ -68,58 +65,117 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   void _navigateToSignUp() {
-    context.go(AppRoutes.signup);
+    context.push(AppRoutes.signup);
   }
 
   @override
   Widget build(BuildContext context) {
     SizeConfig.init(context);
-    
+
     return Scaffold(
       backgroundColor: AppColors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Tombol Lewati (Skip)
-            _buildSkipButton(),
-
-            // Konten PageView
-            Expanded(
-              child: PageView.builder(
-                controller: _pageController,
-                onPageChanged: _onPageChanged,
-                itemCount: _pages.length,
-                physics: const BouncingScrollPhysics(),
-                itemBuilder: (context, index) {
-                  return OnboardingPage(content: _pages[index]);
-                },
+      body: Stack(
+        children: [
+          // Latar belakang oval dekoratif
+          Positioned(
+            bottom: -SizeConfig.getHeight(10),
+            left: -SizeConfig.getWidth(20),
+            right: -SizeConfig.getWidth(20),
+            child: Opacity(
+              opacity: 0.20,
+              child: Container(
+                height: SizeConfig.getHeight(35),
+                decoration: const ShapeDecoration(
+                  color: Color(0xFFF7CAC9),
+                  shape: OvalBorder(),
+                ),
               ),
             ),
-
-            // Indikator Halaman
-            PageIndicator(
-              currentPage: _currentPage,
-              pageCount: _pages.length,
+          ),
+          SafeArea(
+            child: Column(
+              children: [
+                _buildSkipButton(),
+                Expanded(
+                  child: PageView.builder(
+                    controller: _pageController,
+                    onPageChanged: _onPageChanged,
+                    itemCount: _pages.length,
+                    itemBuilder: (context, index) {
+                      final content = _pages[index];
+                      return Column(
+                        children: [
+                          const Spacer(flex: 2),
+                          // Gambar
+                          Expanded(
+                            flex: 6,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                              child: Image.asset(
+                                content.imagePath,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          ),
+                          const Spacer(flex: 1),
+                          // Judul
+                          Text(
+                            content.title,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Color(0xFFDC143C),
+                              fontSize: 24,
+                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          SizedBox(height: SizeConfig.getHeight(2)),
+                          // Deskripsi
+                          Padding(
+                            padding: EdgeInsets.symmetric(horizontal: SizeConfig.getWidth(10)),
+                            child: Text(
+                              content.description,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: Color(0xFFDC143C),
+                                fontSize: 16,
+                                fontFamily: 'Poppins',
+                                fontWeight: FontWeight.w500,
+                                height: 1.44,
+                              ),
+                            ),
+                          ),
+                           const Spacer(flex: 3), // Spacer untuk mendorong ke atas dari kontrol bawah
+                        ],
+                      );
+                    },
+                  ),
+                ),
+                // Bagian bawah yang statis
+                Padding(
+                  padding: EdgeInsets.symmetric(
+                    vertical: 20.0,
+                    horizontal: SizeConfig.getWidth(5),
+                  ),
+                  child: Column(
+                    children: [
+                       _buildPageIndicator(),
+                        SizedBox(height: SizeConfig.getHeight(4)),
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: SizeConfig.getWidth(4)),
+                          child: PrimaryButton(
+                            text: _currentPage == _pages.length - 1 ? 'Mulai Sekarang' : 'Lanjutkan',
+                            onPressed: _nextPage,
+                          ),
+                        ),
+                        SizedBox(height: SizeConfig.getHeight(2)),
+                    ],
+                  ),
+                )
+              ],
             ),
-
-            SizedBox(height: SizeConfig.getHeight(2.5)),
-
-            // Tombol Lanjutkan
-            Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: SizeConfig.getWidth(5),
-              ),
-              child: PrimaryButton(
-                text: 'Lanjutkan',
-                onPressed: _nextPage,
-                width: SizeConfig.getWidth(40),
-                height: SizeConfig.getHeight(6.5),
-              ),
-            ),
-
-            SizedBox(height: SizeConfig.getHeight(6)),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -138,13 +194,34 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         child: Text(
           'Lewati',
           style: TextStyle(
-            color: AppColors.primaryDark,
+            color: const Color(0xFFDC143C),
             fontSize: SizeConfig.getFontSize(16),
             fontFamily: AppTextStyles.fontFamily,
             fontWeight: FontWeight.w500,
+            letterSpacing: -0.48,
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildPageIndicator() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(_pages.length, (index) {
+        return AnimatedContainer(
+          duration: AppDurations.normal,
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          width: _currentPage == index ? 28 : 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: _currentPage == index
+                ? const Color(0xFFDC143C)
+                : const Color(0xFFF7CAC9),
+            borderRadius: BorderRadius.circular(20),
+          ),
+        );
+      }),
     );
   }
 }

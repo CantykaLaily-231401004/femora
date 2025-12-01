@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:femora/config/constants.dart';
-import 'package:femora/core/utils/size_config.dart';
+import 'package:femora/widgets/size_config.dart';
 
 class CustomCalendar extends StatelessWidget {
   final DateTime focusedDay;

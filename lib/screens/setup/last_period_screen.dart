@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:femora/config/routes.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:femora/config/routes.dart';
+import 'package:femora/config/constants.dart';
+import 'package:femora/widgets/custom_back_button.dart';
+import 'package:femora/widgets/primary_button.dart';
+import 'package:femora/widgets/setup_progress_indicator.dart';
+import 'package:femora/widgets/size_config.dart';
 
 class LastPeriodScreen extends StatefulWidget {
   const LastPeriodScreen({Key? key}) : super(key: key);
@@ -12,211 +17,136 @@ class LastPeriodScreen extends StatefulWidget {
 
 class _LastPeriodScreenState extends State<LastPeriodScreen> {
   DateTime _focusedDay = DateTime.now();
-  DateTime? _selectedDay;
+  DateTime? _rangeStart;
+  DateTime? _rangeEnd;
+  RangeSelectionMode _rangeSelectionMode = RangeSelectionMode.toggledOn;
 
   @override
   Widget build(BuildContext context) {
+    SizeConfig.init(context);
+
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-        ),
-        child: Stack(
+      backgroundColor: AppColors.white,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Gradient Background
-            Positioned(
-              left: 0,
-              top: 0,
-              child: Container(
-                width: MediaQuery.of(context).size.width,
-                height: 494,
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Color(0xFFF75270),
-                      Color(0xFFFDEBD0),
-                      Colors.white,
-                    ],
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                child: CustomBackButton(onPressed: () => context.pop()),
+              ),
+            ),
+            SizedBox(height: SizeConfig.getHeight(2)),
+            const SetupProgressIndicator(currentStep: 5, totalSteps: 5),
+            const SizedBox(height: 20),
+            Text(
+              'Masukkan Tanggal Mulai\nMenstruasi Terakhir Anda?',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: AppTextStyles.fontFamily,
+                fontWeight: FontWeight.w700,
+                fontSize: SizeConfig.getFontSize(24),
+                color: AppColors.primary,
+                height: 1.3,
+              ),
+            ),
+            SizedBox(height: SizeConfig.getHeight(2)),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              child: TableCalendar(
+                locale: 'id_ID',
+                firstDay: DateTime.utc(2010, 1, 1),
+                lastDay: DateTime.now(),
+                focusedDay: _focusedDay,
+                rangeStartDay: _rangeStart,
+                rangeEndDay: _rangeEnd,
+                rangeSelectionMode: _rangeSelectionMode,
+                onDaySelected: (selectedDay, focusedDay) {
+                  if (!isSameDay(_rangeStart, selectedDay)) {
+                    setState(() {
+                      _focusedDay = focusedDay;
+                      _rangeStart = selectedDay;
+                      _rangeEnd = null;
+                      _rangeSelectionMode = RangeSelectionMode.toggledOn;
+                    });
+                  }
+                },
+                onRangeSelected: (start, end, focusedDay) {
+                  setState(() {
+                    _focusedDay = focusedDay;
+                    _rangeStart = start;
+                    _rangeEnd = end;
+                  });
+                },
+                headerStyle: HeaderStyle(
+                  titleCentered: true,
+                  formatButtonVisible: false,
+                  titleTextStyle: TextStyle(
+                    fontFamily: AppTextStyles.fontFamily,
+                    fontSize: SizeConfig.getFontSize(16),
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
                   ),
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(40),
-                    bottomRight: Radius.circular(40),
+                  leftChevronIcon: Icon(
+                    Icons.chevron_left,
+                    color: AppColors.primary,
+                    size: SizeConfig.getFontSize(24),
+                  ),
+                  rightChevronIcon: Icon(
+                    Icons.chevron_right,
+                    color: AppColors.primary,
+                    size: SizeConfig.getFontSize(24),
+                  ),
+                ),
+                calendarStyle: CalendarStyle(
+                  rangeHighlightColor: AppColors.primaryLight.withOpacity(0.3),
+                  todayDecoration: const BoxDecoration(
+                    color: AppColors.primaryLight,
+                    shape: BoxShape.circle,
+                  ),
+                  selectedDecoration: const BoxDecoration(
+                    color: AppColors.primary,
+                    shape: BoxShape.circle,
+                  ),
+                  rangeStartDecoration: const BoxDecoration(
+                    color: AppColors.primary,
+                    shape: BoxShape.circle,
+                  ),
+                  rangeEndDecoration: const BoxDecoration(
+                    color: AppColors.primary,
+                    shape: BoxShape.circle,
+                  ),
+                  defaultTextStyle: TextStyle(
+                    fontFamily: AppTextStyles.fontFamily,
+                    fontSize: SizeConfig.getFontSize(14),
+                  ),
+                  weekendTextStyle: TextStyle(
+                    fontFamily: AppTextStyles.fontFamily,
+                    fontSize: SizeConfig.getFontSize(14),
+                    color: AppColors.textSecondary,
+                  ),
+                  outsideTextStyle: TextStyle(
+                    fontFamily: AppTextStyles.fontFamily,
+                    fontSize: SizeConfig.getFontSize(14),
+                    color: AppColors.lightGrey,
                   ),
                 ),
               ),
             ),
-
-            SafeArea(
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 20),
-              
-                      // Progress Indicator 3/5 (Approximating since design has 5/5 on last)
-                      Row(
-                        children: [
-                          GestureDetector(
-                            onTap: () => context.pop(),
-                            child: Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(15),
-                              ),
-                              child: const Icon(Icons.arrow_back_ios_new, size: 24),
-                            ),
-                          ),
-                          const Spacer(),
-                          _buildProgressStep(isActive: false),
-                          const SizedBox(width: 3),
-                          _buildProgressStep(isActive: false),
-                          const SizedBox(width: 3),
-                          _buildProgressStep(isActive: true),
-                          const SizedBox(width: 3),
-                          _buildProgressStep(isActive: false),
-                          const SizedBox(width: 3),
-                          _buildProgressStep(isActive: false),
-                          const SizedBox(width: 10),
-                          const Text(
-                            '3 / 5',
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontSize: 16,
-                              fontFamily: 'Instrument Sans',
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-              
-                      const SizedBox(height: 30),
-              
-                      const Text(
-                        'Masukkan Tanggal Mulai Menstruasi Terakhir Anda?',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Color(0xFFDC143C),
-                          fontSize: 30,
-                          fontFamily: 'Poppins',
-                          fontWeight: FontWeight.w700,
-                          height: 1.20,
-                        ),
-                      ),
-              
-                      const SizedBox(height: 30),
-              
-                      // Calendar Container
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x0C000000),
-                              blurRadius: 29.40,
-                              offset: Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: TableCalendar(
-                          firstDay: DateTime.utc(2020, 1, 1),
-                          lastDay: DateTime.utc(2030, 12, 31),
-                          focusedDay: _focusedDay,
-                          currentDay: DateTime.now(),
-                          selectedDayPredicate: (day) {
-                            return isSameDay(_selectedDay, day);
-                          },
-                          onDaySelected: (selectedDay, focusedDay) {
-                            setState(() {
-                              _selectedDay = selectedDay;
-                              _focusedDay = focusedDay;
-                            });
-                          },
-                          calendarStyle: const CalendarStyle(
-                            selectedDecoration: BoxDecoration(
-                              color: Color(0xFFF75270),
-                              shape: BoxShape.circle,
-                            ),
-                            todayDecoration: BoxDecoration(
-                              color: Color(0xFFFF8699), // Lighter shade for today
-                              shape: BoxShape.circle,
-                            ),
-                            defaultTextStyle: TextStyle(
-                              fontFamily: 'Montserrat',
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          headerStyle: const HeaderStyle(
-                            formatButtonVisible: false,
-                            titleCentered: true,
-                            titleTextStyle: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontWeight: FontWeight.w700,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ),
-                      ),
-              
-                      const SizedBox(height: 40),
-              
-                      // Selesai Button
-                      GestureDetector(
-                        onTap: () {
-                          if (_selectedDay != null) {
-                            context.push(AppRoutes.setupLoading);
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Pilih tanggal terlebih dahulu')),
-                            );
-                          }
-                        },
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(13),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF75270),
-                            borderRadius: BorderRadius.circular(40),
-                          ),
-                          child: const Text(
-                            'Selesai',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontFamily: 'Poppins',
-                              fontWeight: FontWeight.w700,
-                              height: 1.20,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                    ],
-                  ),
-                ),
+            const Spacer(),
+            Padding(
+              padding: EdgeInsets.fromLTRB(SizeConfig.getWidth(5), 20, SizeConfig.getWidth(5), 35),
+              child: PrimaryButton(
+                text: 'Selesai',
+                onPressed: () {
+                   context.go(AppRoutes.home);
+                },
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildProgressStep({required bool isActive}) {
-    return Container(
-      width: 30,
-      height: 8,
-      decoration: BoxDecoration(
-        color: isActive ? const Color(0xFFDC143C) : const Color(0xFFFFF3F4),
-        borderRadius: BorderRadius.circular(40),
       ),
     );
   }

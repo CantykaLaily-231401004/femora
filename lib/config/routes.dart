@@ -6,12 +6,12 @@ import 'package:femora/screens/auth/login_screen.dart';
 import 'package:femora/screens/auth/forgot_password_screen.dart';
 import 'package:femora/screens/auth/reset_password_screen.dart';
 import 'package:femora/screens/auth/password_success_screen.dart';
-import 'package:femora/screens/profile_setup_screen.dart';
-import 'package:femora/screens/setup/cycle_length_screen.dart';
+import 'package:femora/screens/setup/profile_setup_screen.dart';
+import 'package:femora/screens/setup/weight_screen.dart';
 import 'package:femora/screens/setup/period_duration_screen.dart';
+import 'package:femora/screens/setup/cycle_length_screen.dart';
 import 'package:femora/screens/setup/last_period_screen.dart';
-import 'package:femora/screens/setup/setup_loading_screen.dart';
-import 'package:femora/screens/home_screen.dart';
+import 'package:femora/screens/home/home_screen.dart';
 import 'package:go_router/go_router.dart';
 
 class AppRoutes {
@@ -24,10 +24,10 @@ class AppRoutes {
   static const String resetPassword = '/reset-password';
   static const String passwordSuccess = '/password-success';
   static const String profileSetup = '/profile-setup';
-  static const String cycleLength = '/cycle-length';
+  static const String weight = '/weight';
   static const String periodDuration = '/period-duration';
+  static const String cycleLength = '/cycle-length';
   static const String lastPeriod = '/last-period';
-  static const String setupLoading = '/setup-loading';
   static const String home = '/home';
 }
 
@@ -80,9 +80,9 @@ final GoRouter router = GoRouter(
       builder: (context, state) => const ProfileSetupScreen(),
     ),
     GoRoute(
-      path: AppRoutes.cycleLength,
-      name: 'cycle-length',
-      builder: (context, state) => const CycleLengthScreen(),
+      path: AppRoutes.weight,
+      name: 'weight',
+      builder: (context, state) => const WeightScreen(),
     ),
     GoRoute(
       path: AppRoutes.periodDuration,
@@ -90,14 +90,14 @@ final GoRouter router = GoRouter(
       builder: (context, state) => const PeriodDurationScreen(),
     ),
     GoRoute(
+      path: AppRoutes.cycleLength,
+      name: 'cycle-length',
+      builder: (context, state) => const CycleLengthScreen(),
+    ),
+    GoRoute(
       path: AppRoutes.lastPeriod,
       name: 'last-period',
       builder: (context, state) => const LastPeriodScreen(),
-    ),
-    GoRoute(
-      path: AppRoutes.setupLoading,
-      name: 'setup-loading',
-      builder: (context, state) => const SetupLoadingScreen(),
     ),
     GoRoute(
       path: AppRoutes.home,

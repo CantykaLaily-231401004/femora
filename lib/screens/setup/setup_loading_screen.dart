@@ -1,7 +1,9 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:femora/config/routes.dart';
+import 'package:femora/config/constants.dart';
+import 'package:femora/widgets/setup_progress_indicator.dart';
+import 'package:femora/widgets/size_config.dart';
 
 class SetupLoadingScreen extends StatefulWidget {
   const SetupLoadingScreen({Key? key}) : super(key: key);
@@ -10,162 +12,58 @@ class SetupLoadingScreen extends StatefulWidget {
   State<SetupLoadingScreen> createState() => _SetupLoadingScreenState();
 }
 
-class _SetupLoadingScreenState extends State<SetupLoadingScreen> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<int> _animation;
-
+class _SetupLoadingScreenState extends State<SetupLoadingScreen> {
   @override
   void initState() {
     super.initState();
-    
-    // Setup animation controller
-    _controller = AnimationController(
-      duration: const Duration(seconds: 3),
-      vsync: this,
-    );
-
-    // Create an integer animation from 0 to 100
-    _animation = IntTween(begin: 0, end: 100).animate(_controller)
-      ..addListener(() {
-        setState(() {});
-      });
-
-    // Start the animation
-    _controller.forward().then((_) {
-      // When animation completes (after 3 seconds), navigate to home
-      context.go(AppRoutes.home);
-    });
+    _startLoadingAndNavigate();
   }
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
+  void _startLoadingAndNavigate() async {
+    // Simulate a network request or data processing
+    await Future.delayed(const Duration(seconds: 3));
+
+    // Navigate to the home screen after loading is complete
+    if (mounted) {
+      context.go(AppRoutes.home);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    SizeConfig.init(context);
+
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-        ),
-        child: Stack(
+      backgroundColor: AppColors.white,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            SafeArea(
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                     const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 32),
-                      child: Text(
-                        'Mempersiapkan kalender pribadi Anda...',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Color(0xFFDC143C),
-                          fontSize: 30,
-                          fontFamily: 'Poppins',
-                          fontWeight: FontWeight.w700,
-                          height: 1.20,
-                        ),
-                      ),
+            SizedBox(height: SizeConfig.getHeight(4)),
+            const SetupProgressIndicator(currentStep: 6, totalSteps: 6),
+            const Spacer(),
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                  ),
+                  SizedBox(height: SizeConfig.getHeight(3)),
+                  Text(
+                    'Menganalisis data Anda...',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: AppTextStyles.fontFamily,
+                      fontWeight: FontWeight.w600,
+                      fontSize: SizeConfig.getFontSize(18),
+                      color: AppColors.textPrimary,
                     ),
-                    
-                    const SizedBox(height: 60),
-
-                    // Circular Progress
-                    SizedBox(
-                      width: 215,
-                      height: 215,
-                      child: Stack(
-                        children: [
-                          Container(
-                            width: 215,
-                            height: 215,
-                            decoration: const ShapeDecoration(
-                              color: Color(0xFFF75270),
-                              shape: OvalBorder(),
-                            ),
-                          ),
-                          // Inner decoration details from Figma
-                          Positioned(
-                            left: 5.55,
-                            top: 42.84,
-                            child: Container(
-                              width: 31.73,
-                              height: 31.73,
-                              clipBehavior: Clip.antiAlias,
-                              decoration: ShapeDecoration(
-                                color: const Color(0xFFF75270),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(40),
-                                ),
-                              ),
-                              child: Center(
-                                child: Container(
-                                  width: 15.87,
-                                  height: 15.87,
-                                  decoration: const ShapeDecoration(
-                                    color: Color(0xFFF9F9F9),
-                                    shape: OvalBorder(),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          Center(
-                            child: RichText(
-                              textAlign: TextAlign.center,
-                              text: TextSpan(
-                                children: [
-                                  TextSpan(
-                                    text: '${_animation.value}',
-                                    style: const TextStyle(
-                                      color: Colors.black,
-                                      fontSize: 50, // Adjusted size
-                                      fontFamily: 'Poppins',
-                                      fontWeight: FontWeight.w700,
-                                      height: 1.20,
-                                    ),
-                                  ),
-                                  const TextSpan(
-                                    text: '%',
-                                    style: TextStyle(
-                                      color: Colors.black,
-                                      fontSize: 30,
-                                      fontFamily: 'Instrument Sans',
-                                      fontWeight: FontWeight.w700,
-                                      height: 1.20,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 60),
-
-                    const Text(
-                      'Memuat data… hampir selesai',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Color(0xFF808080),
-                        fontSize: 16,
-                        fontFamily: 'Poppins',
-                        fontWeight: FontWeight.w400,
-                        height: 1.20,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
+            const Spacer(),
           ],
         ),
       ),

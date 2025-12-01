@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:femora/config/constants.dart';
-import 'package:femora/core/utils/size_config.dart';
+import 'package:femora/widgets/size_config.dart';
 
 class SecondaryButton extends StatelessWidget {
   final String text;
@@ -18,15 +18,13 @@ class SecondaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    SizeConfig.init(context);
     return GestureDetector(
       onTap: onPressed,
       child: Container(
         width: width ?? double.infinity,
-        height: height,
-        padding: const EdgeInsets.symmetric(
-          horizontal: 13,
-          vertical: 16,
-        ),
+        height: height ?? 52,
+        padding: const EdgeInsets.all(13),
         decoration: BoxDecoration(
           border: Border.all(
             width: 1,

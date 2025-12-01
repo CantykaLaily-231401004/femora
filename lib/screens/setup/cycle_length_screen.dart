@@ -2,6 +2,11 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:femora/config/routes.dart';
+import 'package:femora/config/constants.dart';
+import 'package:femora/widgets/custom_back_button.dart';
+import 'package:femora/widgets/primary_button.dart';
+import 'package:femora/widgets/setup_progress_indicator.dart';
+import 'package:femora/widgets/size_config.dart';
 
 class CycleLengthScreen extends StatefulWidget {
   const CycleLengthScreen({Key? key}) : super(key: key);
@@ -11,174 +16,121 @@ class CycleLengthScreen extends StatefulWidget {
 }
 
 class _CycleLengthScreenState extends State<CycleLengthScreen> {
-  int _selectedCycleLength = 28; // Default value
+  bool _isRegular = true;
+  int _startCycle = 23;
+  int _endCycle = 27;
+
+  final int _minCycle = 15;
+  final int _maxCycle = 45;
+
+  Widget _buildPicker({
+    required int initialItem,
+    required Function(int) onSelectedItemChanged,
+  }) {
+    return SizedBox(
+      width: SizeConfig.getWidth(30),
+      height: SizeConfig.getHeight(30),
+      child: CupertinoPicker(
+        scrollController: FixedExtentScrollController(initialItem: initialItem),
+        itemExtent: 50,
+        onSelectedItemChanged: onSelectedItemChanged,
+        children: List<Widget>.generate(_maxCycle - _minCycle + 1, (int index) {
+          final int currentDay = index + _minCycle;
+          return Center(
+            child: Text(
+              '$currentDay',
+              style: TextStyle(
+                color: (currentDay == _startCycle || currentDay == _endCycle)
+                    ? AppColors.primary
+                    : AppColors.textSecondary,
+                fontSize: (currentDay == _startCycle || currentDay == _endCycle) ? 28 : 24,
+                fontWeight: (currentDay == _startCycle || currentDay == _endCycle)
+                    ? FontWeight.w600
+                    : FontWeight.w400,
+              ),
+            ),
+          );
+        }),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    SizeConfig.init(context);
+
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-        ),
-        child: Stack(
+      backgroundColor: AppColors.white,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Gradient Background
-            Positioned(
-              left: 0,
-              top: 0,
-              child: Container(
-                width: MediaQuery.of(context).size.width,
-                height: 494,
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Color(0xFFF75270),
-                      Color(0xFFFDEBD0),
-                      Colors.white,
-                    ],
-                  ),
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(40),
-                    bottomRight: Radius.circular(40),
-                  ),
-                ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                child: CustomBackButton(onPressed: () => context.pop()),
               ),
             ),
-
-            SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 20),
-
-                    // Progress Indicator 1/5 (approximate based on design)
-                     Row(
-                      children: [
-                        GestureDetector(
-                          onTap: () => context.pop(),
-                          child: Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(15),
-                            ),
-                            child: const Icon(Icons.arrow_back_ios_new, size: 24),
-                          ),
-                        ),
-                        const Spacer(),
-                        _buildProgressStep(isActive: true),
-                        const SizedBox(width: 3),
-                        _buildProgressStep(isActive: false),
-                        const SizedBox(width: 3),
-                        _buildProgressStep(isActive: false),
-                        const SizedBox(width: 3),
-                        _buildProgressStep(isActive: false),
-                        const SizedBox(width: 3),
-                        _buildProgressStep(isActive: false),
-                        const SizedBox(width: 10),
-                         const Text(
-                          '1 / 5',
-                           style: TextStyle(
-                             color: Colors.black,
-                             fontSize: 16,
-                             fontFamily: 'Instrument Sans',
-                             fontWeight: FontWeight.w600,
-                           ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 40),
-
-                    const Text(
-                      'Berapa Lama Siklus Menstruasi Anda?',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Color(0xFFDC143C),
-                        fontSize: 30,
-                        fontFamily: 'Poppins',
-                        fontWeight: FontWeight.w700,
-                        height: 1.20,
-                      ),
-                    ),
-
-                    const SizedBox(height: 40),
-
-                    // Wheel Picker Container
-                    Container(
-                      height: 350,
-                      padding: const EdgeInsets.symmetric(vertical: 20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(0x0C000000),
-                            blurRadius: 29.40,
-                            offset: Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: CupertinoPicker(
-                        itemExtent: 60,
-                        scrollController: FixedExtentScrollController(initialItem: _selectedCycleLength - 15),
-                        onSelectedItemChanged: (int index) {
-                          setState(() {
-                            _selectedCycleLength = index + 15;
-                          });
-                        },
-                        children: List<Widget>.generate(31, (int index) {
-                          return Center(
-                            child: Text(
-                              '${index + 15}',
-                              style: TextStyle(
-                                color: _selectedCycleLength == (index + 15)
-                                    ? Colors.black // Active color
-                                    : const Color(0xFFBEBEBE), // Inactive color
-                                fontSize: 32,
-                                fontFamily: 'Montserrat',
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          );
-                        }),
-                      ),
-                    ),
-
-                    const Spacer(),
-
-                    // Continue Button
-                    GestureDetector(
-                      onTap: () {
-                        context.push(AppRoutes.periodDuration);
-                      },
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(13),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF75270),
-                          borderRadius: BorderRadius.circular(40),
-                        ),
-                        child: const Text(
-                          'Continue',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontFamily: 'Instrument Sans',
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 40),
-                  ],
+            SizedBox(height: SizeConfig.getHeight(2)),
+            const SetupProgressIndicator(currentStep: 4, totalSteps: 5),
+            const SizedBox(height: 20),
+            Text(
+              'Masukkan Panjang\nSiklus Anda',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: AppTextStyles.fontFamily,
+                fontWeight: FontWeight.w700,
+                fontSize: SizeConfig.getFontSize(28),
+                color: AppColors.primary,
+                height: 1.3,
+              ),
+            ),
+            SizedBox(height: SizeConfig.getHeight(3)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildToggleButton('Teratur', _isRegular),
+                SizedBox(width: SizeConfig.getWidth(3)),
+                _buildToggleButton('Tidak Teratur', !_isRegular),
+              ],
+            ),
+            const Spacer(),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                _buildPicker(
+                  initialItem: _startCycle - _minCycle,
+                  onSelectedItemChanged: (index) {
+                    setState(() => _startCycle = index + _minCycle);
+                  },
                 ),
+                const Text("-", style: TextStyle(fontSize: 24, color: AppColors.textSecondary)),
+                _buildPicker(
+                  initialItem: _endCycle - _minCycle,
+                  onSelectedItemChanged: (index) {
+                    setState(() => _endCycle = index + _minCycle);
+                  },
+                ),
+                 Text(
+                    'Hari',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontSize: SizeConfig.getFontSize(22),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+              ],
+            ),
+            const Spacer(),
+            Padding(
+              padding: EdgeInsets.fromLTRB(SizeConfig.getWidth(5), 20, SizeConfig.getWidth(5), 35),
+              child: PrimaryButton(
+                text: 'Lanjutkan',
+                onPressed: () {
+                   context.push(AppRoutes.lastPeriod);
+                },
               ),
             ),
           ],
@@ -187,13 +139,31 @@ class _CycleLengthScreenState extends State<CycleLengthScreen> {
     );
   }
 
-  Widget _buildProgressStep({required bool isActive}) {
-    return Container(
-      width: 30,
-      height: 8,
-      decoration: BoxDecoration(
-        color: isActive ? const Color(0xFFDC143C) : const Color(0xFFFFF3F4),
-        borderRadius: BorderRadius.circular(40),
+  Widget _buildToggleButton(String text, bool isSelected) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _isRegular = text == 'Teratur';
+        });
+      },
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: SizeConfig.getWidth(8),
+          vertical: SizeConfig.getHeight(1.5),
+        ),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary : AppColors.white,
+          borderRadius: BorderRadius.circular(AppBorderRadius.xl),
+          border: isSelected ? null : Border.all(color: AppColors.borderColor),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            color: isSelected ? AppColors.white : AppColors.textSecondary,
+            fontWeight: FontWeight.w600,
+            fontSize: SizeConfig.getFontSize(16),
+          ),
+        ),
       ),
     );
   }

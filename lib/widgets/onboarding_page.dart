@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:femora/config/constants.dart';
-import 'package:femora/core/utils/size_config.dart';
+import 'package:femora/widgets/size_config.dart';
 import 'package:femora/models/onboarding_content.dart';
 
 class OnboardingPage extends StatelessWidget {

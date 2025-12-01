@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:femora/config/constants.dart';
 import 'package:femora/config/routes.dart';
-import 'package:femora/core/utils/size_config.dart';
-import 'package:femora/core/widgets/buttons/custom_back_button.dart';
-import 'package:femora/core/widgets/buttons/primary_button.dart';
-import 'package:femora/core/widgets/common/gradient_background.dart';
-import 'package:femora/core/widgets/inputs/text_field_custom.dart';
-import 'package:femora/core/widgets/inputs/password_field.dart';
+import 'package:femora/widgets/auth_header.dart';
+import 'package:femora/widgets/size_config.dart';
+import 'package:femora/widgets/custom_back_button.dart';
+import 'package:femora/widgets/primary_button.dart';
+import 'package:femora/widgets/gradient_background.dart';
+import 'package:femora/widgets/text_field_custom.dart';
+import 'package:femora/widgets/password_field.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({Key? key}) : super(key: key);
@@ -18,7 +19,6 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   bool _isAgreed = false;
-  bool _isPasswordVisible = false;
 
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
@@ -41,299 +41,209 @@ class _RegisterScreenState extends State<RegisterScreen> {
       body: Stack(
         children: [
           // Gradient Background
-          Positioned(
-            left: 0,
-            top: 0,
-            child: GradientBackground(
-              height: SizeConfig.getHeight(60),
-              child: const SizedBox(),
-            ),
+          GradientBackground(
+            height: SizeConfig.getHeight(40),
+            child: const SizedBox(),
           ),
 
           // Main Content
           SafeArea(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: SizeConfig.getWidth(5),
-                ),
-                child: Column(
-                  children: [
-                    SizedBox(height: SizeConfig.getHeight(2.5)),
-
-                    // Back Button
-                    Align(
-                      alignment: Alignment.topLeft,
-                      child: CustomBackButton(
-                        onPressed: () => context.pop(),
-                      ),
+            child: Column(
+              children: [
+                // Back button
+                Align(
+                  alignment: Alignment.topLeft,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                    child: CustomBackButton(
+                      onPressed: () => context.pop(),
                     ),
+                  ),
+                ),
+                SizedBox(height: SizeConfig.getHeight(4)),
 
-                    SizedBox(height: SizeConfig.getHeight(5)),
-
-                    // White Card Container
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: SizeConfig.getWidth(4),
-                        vertical: SizeConfig.getHeight(2.5),
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.white,
-                        borderRadius: BorderRadius.circular(AppBorderRadius.lg),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(0x1A000000),
-                            blurRadius: 10,
-                            offset: Offset(0, 4),
+                // Form Area
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.symmetric(horizontal: SizeConfig.getWidth(5)),
+                    child: Column(
+                      children: [
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: SizeConfig.getWidth(4),
+                            vertical: SizeConfig.getHeight(3.5),
                           ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Header
-                          Center(
-                            child: Column(
-                              children: [
-                                Text(
-                                  'Mulai Hari ini!',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: AppColors.textHighlight,
-                                    fontSize: SizeConfig.getFontSize(30),
-                                    fontFamily: AppTextStyles.fontFamily,
-                                    fontWeight: FontWeight.w700,
-                                    height: 1.20,
-                                  ),
-                                ),
-                                SizedBox(height: SizeConfig.getHeight(1)),
-                                Text(
-                                  'Bergabung sekarang dan prediksi siklusmu',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: AppColors.textSecondary,
-                                    fontSize: SizeConfig.getFontSize(14),
-                                    fontFamily: AppTextStyles.fontFamily,
-                                    fontWeight: FontWeight.w400,
-                                    height: 1.20,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          
-                          SizedBox(height: SizeConfig.getHeight(3)),
-
-                          // Form Fields
-                          // Nama Lengkap
-                          Text(
-                            'Nama Lengkap',
-                            style: TextStyle(
-                              color: AppColors.textPrimary,
-                              fontSize: SizeConfig.getFontSize(16),
-                              fontFamily: AppTextStyles.fontFamily,
-                              fontWeight: FontWeight.w500,
-                              height: 1.20,
-                            ),
-                          ),
-                          SizedBox(height: SizeConfig.getHeight(1)),
-                          CustomTextField(
-                            controller: _nameController,
-                            hintText: 'Nama Lengkap',
-                          ),
-
-                          SizedBox(height: SizeConfig.getHeight(2.5)),
-
-                          // Email
-                          Text(
-                            'Email',
-                            style: TextStyle(
-                              color: AppColors.textPrimary,
-                              fontSize: SizeConfig.getFontSize(16),
-                              fontFamily: AppTextStyles.fontFamily,
-                              fontWeight: FontWeight.w500,
-                              height: 1.20,
-                            ),
-                          ),
-                          SizedBox(height: SizeConfig.getHeight(1)),
-                          CustomTextField(
-                            controller: _emailController,
-                            hintText: 'Email',
-                            keyboardType: TextInputType.emailAddress,
-                          ),
-
-                          SizedBox(height: SizeConfig.getHeight(2.5)),
-
-                          // Password
-                          Text(
-                            'Kata Sandi',
-                            style: TextStyle(
-                              color: AppColors.textPrimary,
-                              fontSize: SizeConfig.getFontSize(16),
-                              fontFamily: AppTextStyles.fontFamily,
-                              fontWeight: FontWeight.w500,
-                              height: 1.20,
-                            ),
-                          ),
-                          SizedBox(height: SizeConfig.getHeight(1)),
-                          PasswordField(
-                            controller: _passwordController,
-                          ),
-
-                          SizedBox(height: SizeConfig.getHeight(2.5)),
-
-                          // Checkbox Terms
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: Checkbox(
-                                  value: _isAgreed,
-                                  activeColor: AppColors.primary,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  side: const BorderSide(
-                                    color: AppColors.textSecondary,
-                                    width: 1.2,
-                                  ),
-                                  onChanged: (value) {
-                                    setState(() {
-                                      _isAgreed = value ?? false;
-                                    });
-                                  },
-                                ),
-                              ),
-                              SizedBox(width: SizeConfig.getWidth(2.5)),
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      _isAgreed = !_isAgreed;
-                                    });
-                                  },
-                                  child: Text(
-                                    'Saya setuju dengan Syarat & Ketentuan Femora.',
-                                    style: TextStyle(
-                                      color: AppColors.textSecondary,
-                                      fontSize: SizeConfig.getFontSize(12),
-                                      fontFamily: AppTextStyles.fontFamily,
-                                      fontWeight: FontWeight.w500,
-                                      height: 1.20,
-                                    ),
-                                  ),
-                                ),
+                          decoration: BoxDecoration(
+                            color: AppColors.white,
+                            borderRadius: BorderRadius.circular(AppBorderRadius.lg),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0x1A000000),
+                                blurRadius: 20,
+                                offset: Offset(0, 4),
                               ),
                             ],
                           ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Header
+                              const AuthHeader(
+                                title: 'Mulai Hari ini!',
+                                subtitle: 'Bergabung sekarang dan prediksi siklusmu',
+                                titleColor: Color(0xFFDC143C),
+                              ),
+                              
+                              SizedBox(height: SizeConfig.getHeight(3)),
 
-                          SizedBox(height: SizeConfig.getHeight(3)),
+                              // Form Fields
+                              CustomTextField(
+                                controller: _nameController,
+                                hintText: 'Nama Lengkap',
+                                icon: Icons.person_outline,
+                              ),
 
-                          // Button Daftar
-                          PrimaryButton(
-                            text: 'Daftar',
-                            onPressed: _isAgreed
-                                ? () {
-                                    if (_nameController.text.isEmpty || 
-                                        _emailController.text.isEmpty || 
-                                        _passwordController.text.isEmpty) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('Harap isi semua data')),
-                                      );
-                                      return;
-                                    }
+                              SizedBox(height: SizeConfig.getHeight(2)),
 
-                                    context.push(AppRoutes.profileSetup);
-                                  }
-                                : null,
-                          ),
+                              CustomTextField(
+                                controller: _emailController,
+                                hintText: 'Email',
+                                keyboardType: TextInputType.emailAddress,
+                                icon: Icons.email_outlined,
+                              ),
 
-                          SizedBox(height: SizeConfig.getHeight(2.5)),
+                              SizedBox(height: SizeConfig.getHeight(2)),
 
-                          // Divider "atau hubungkan dengan"
-                          Center(
-                            child: Column(
-                              children: [
-                                Text(
-                                  'atau hubungkan dengan ',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: AppColors.textPrimary,
-                                    fontSize: SizeConfig.getFontSize(14),
-                                    fontFamily: AppTextStyles.fontFamily,
-                                    fontWeight: FontWeight.w400,
-                                    height: 1.20,
+                              PasswordField(
+                                controller: _passwordController,
+                              ),
+
+                              SizedBox(height: SizeConfig.getHeight(2)),
+
+                              // Checkbox Terms
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Checkbox(
+                                    value: _isAgreed,
+                                    activeColor: AppColors.primary,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    side: const BorderSide(
+                                      color: AppColors.textSecondary,
+                                      width: 1.2,
+                                    ),
+                                    onChanged: (value) {
+                                      setState(() {
+                                        _isAgreed = value ?? false;
+                                      });
+                                    },
                                   ),
-                                ),
-                                SizedBox(height: SizeConfig.getHeight(1.5)),
-                                GestureDetector(
-                                  onTap: () {
-                                    // TODO: Google Sign In
-                                    print('Google Sign In from Register');
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.all(10),
-                                    decoration: BoxDecoration(
-                                      border: Border.all(
-                                        width: 1,
-                                        color: AppColors.borderColor,
+                                  SizedBox(width: SizeConfig.getWidth(1)),
+                                  Expanded(
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        setState(() {
+                                          _isAgreed = !_isAgreed;
+                                        });
+                                      },
+                                      child: Text(
+                                        'Saya setuju dengan Syarat & Ketentuan Femora.',
+                                        style: TextStyle(
+                                          color: AppColors.textSecondary,
+                                          fontSize: SizeConfig.getFontSize(12),
+                                          fontFamily: AppTextStyles.fontFamily,
+                                        ),
                                       ),
-                                      borderRadius: BorderRadius.circular(15),
-                                    ),
-                                    child: Image.asset(
-                                      AppAssets.googleIcon,
-                                      width: 24,
-                                      height: 24,
                                     ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
+
+                              SizedBox(height: SizeConfig.getHeight(3)),
+
+                              // Button Daftar
+                              PrimaryButton(
+                                text: 'Daftar',
+                                onPressed: _isAgreed
+                                    ? () {
+                                        if (_nameController.text.isEmpty || 
+                                            _emailController.text.isEmpty || 
+                                            _passwordController.text.isEmpty) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(content: Text('Harap isi semua data')),
+                                          );
+                                          return;
+                                        }
+                                        context.push(AppRoutes.profileSetup);
+                                      }
+                                    : null,
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        SizedBox(height: SizeConfig.getHeight(2.5)),
+
+                        Text(
+                          'atau hubungkan dengan',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: SizeConfig.getFontSize(14),
+                          ),
+                        ),
+                        SizedBox(height: SizeConfig.getHeight(1.5)),
+
+                        Center(
+                          child: GestureDetector(
+                            onTap: () {
+                              // TODO: Google Sign In
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                border: Border.all(color: AppColors.borderColor, width: 1),
+                                borderRadius: BorderRadius.circular(15)
+                              ),
+                              child: Image.asset(AppAssets.googleIcon, width: 28, height: 28),
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-
-                    SizedBox(height: SizeConfig.getHeight(2.5)),
-
-                    // Footer Link
-                    GestureDetector(
-                      onTap: () {
-                        context.push(AppRoutes.login);
-                      },
-                      child: RichText(
-                        textAlign: TextAlign.center,
-                        text: TextSpan(
-                          children: [
-                            TextSpan(
-                              text: 'Sudah punya akun?',
-                              style: TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: SizeConfig.getFontSize(16),
-                                fontFamily: AppTextStyles.fontFamily,
-                                fontWeight: FontWeight.w400,
-                              ),
-                            ),
-                            TextSpan(
-                              text: ' Masuk',
-                              style: TextStyle(
-                                color: AppColors.textPrimary,
-                                fontSize: SizeConfig.getFontSize(16),
-                                fontFamily: AppTextStyles.fontFamily,
-                                fontWeight: FontWeight.w400,
-                              ),
-                            ),
-                          ],
                         ),
-                      ),
+
+                        SizedBox(height: SizeConfig.getHeight(2.5)),
+
+                        Center(
+                          child: GestureDetector(
+                            onTap: () => context.replace(AppRoutes.login),
+                            child: RichText(
+                              text: TextSpan(
+                                text: 'Sudah punya akun? ',
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: SizeConfig.getFontSize(14),
+                                  fontFamily: AppTextStyles.fontFamily,
+                                ),
+                                children: [
+                                  TextSpan(
+                                    text: 'Masuk',
+                                    style: TextStyle(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: SizeConfig.getHeight(2)), // Extra space at bottom
+                      ],
                     ),
-                    
-                    SizedBox(height: SizeConfig.getHeight(5)),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
         ],

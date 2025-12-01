@@ -38,17 +38,8 @@ class HomeHeader extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 7),
-            Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                image: DecorationImage(
-                  image: NetworkImage(userImageUrl),
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
+            // TODO: Ganti dengan gambar tangan melambai
+            const Text('👋', style: TextStyle(fontSize: 20)),
           ],
         ),
       ],
