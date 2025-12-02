@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:femora/config/constants.dart';
 import 'package:femora/widgets/size_config.dart';
@@ -43,7 +44,7 @@ class CustomBottomNavBar extends StatelessWidget {
                 item: items[index],
                 isSelected: isSelected,
                 onTap: () => onTap(index),
-                isCenter: index == 1,
+                isCenter: index == 1, // The center item is at index 1
               );
             }),
           ),
@@ -92,14 +93,12 @@ class _NavBarItem extends StatelessWidget {
               width: isCenter ? 64 : 60,
               height: isCenter ? 64 : 60,
               decoration: BoxDecoration(
-                color: isCenter ? AppColors.primary : Colors.white,
+                color: isSelected ? AppColors.primary : Colors.white,
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 item.icon,
-                color: isCenter
-                    ? Colors.white
-                    : (isSelected ? Colors.black : Colors.grey.shade400),
+                color: isSelected ? Colors.white : Colors.grey.shade400,
                 size: isCenter ? 32 : 28,
               ),
             ),
