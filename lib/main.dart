@@ -10,7 +10,7 @@ void main() async { // Make main async
   // Initialize date formatting for the Indonesian locale
   await initializeDateFormatting('id_ID', null);
   
-  // Set preferred orientations
+  // Set Orientations
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
