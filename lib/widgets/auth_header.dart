@@ -38,7 +38,7 @@ class AuthHeader extends StatelessWidget {
             fontSize: SizeConfig.getFontSize(14),
             fontFamily: AppTextStyles.fontFamily,
             fontWeight: FontWeight.w400,
-            color: AppColors.textSecondary,
+            color: AppColors.textPrimary,
           ),
         ),
       ],

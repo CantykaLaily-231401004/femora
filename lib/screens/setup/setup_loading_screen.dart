@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:femora/config/routes.dart';
 import 'package:femora/config/constants.dart';
 import 'package:femora/widgets/setup_progress_indicator.dart';
 import 'package:femora/widgets/size_config.dart';
@@ -25,7 +24,7 @@ class _SetupLoadingScreenState extends State<SetupLoadingScreen> {
 
     // Navigate to the home screen after loading is complete
     if (mounted) {
-      context.go(AppRoutes.home);
+      context.go('/home');
     }
   }
 

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:femora/config/routes.dart';
 import 'package:femora/config/theme.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 void main() async { // Make main async
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,6 +40,14 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Femora',
       theme: AppTheme.lightTheme,
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('id', 'ID'),
+      ],
       
       // Builder to access MediaQuery throughout the app
       builder: (context, child) {

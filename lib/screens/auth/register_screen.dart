@@ -1,7 +1,8 @@
+import 'package:femora/services/cycle_data_service.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:femora/config/constants.dart';
-import 'package:femora/config/routes.dart';
+import 'package:femora/widgets/auth_footer.dart';
 import 'package:femora/widgets/auth_header.dart';
 import 'package:femora/widgets/size_config.dart';
 import 'package:femora/widgets/custom_back_button.dart';
@@ -176,7 +177,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                           );
                                           return;
                                         }
-                                        context.push(AppRoutes.profileSetup);
+                                        // "Menabung" nama ke brankas data
+                                        CycleDataService().setFullName(_nameController.text);
+                                        context.push('/profile-setup');
                                       }
                                     : null,
                               ),
@@ -184,61 +187,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                         ),
 
-                        SizedBox(height: SizeConfig.getHeight(2.5)),
+                        SizedBox(height: SizeConfig.getHeight(3)),
 
-                        Text(
-                          'atau hubungkan dengan',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: SizeConfig.getFontSize(14),
-                          ),
+                        AuthFooter(
+                          bottomText: 'Sudah punya akun?',
+                          actionText: 'Masuk',
+                          onAction: () => context.replace('/login'),
                         ),
-                        SizedBox(height: SizeConfig.getHeight(1.5)),
-
-                        Center(
-                          child: GestureDetector(
-                            onTap: () {
-                              // TODO: Google Sign In
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                border: Border.all(color: AppColors.borderColor, width: 1),
-                                borderRadius: BorderRadius.circular(15)
-                              ),
-                              child: Image.asset(AppAssets.googleIcon, width: 28, height: 28),
-                            ),
-                          ),
-                        ),
-
-                        SizedBox(height: SizeConfig.getHeight(2.5)),
-
-                        Center(
-                          child: GestureDetector(
-                            onTap: () => context.replace(AppRoutes.login),
-                            child: RichText(
-                              text: TextSpan(
-                                text: 'Sudah punya akun? ',
-                                style: TextStyle(
-                                  color: AppColors.textSecondary,
-                                  fontSize: SizeConfig.getFontSize(14),
-                                  fontFamily: AppTextStyles.fontFamily,
-                                ),
-                                children: [
-                                  TextSpan(
-                                    text: 'Masuk',
-                                    style: TextStyle(
-                                      color: AppColors.primary,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: SizeConfig.getHeight(2)), // Extra space at bottom
+                        SizedBox(height: SizeConfig.getHeight(2)),
                       ],
                     ),
                   ),

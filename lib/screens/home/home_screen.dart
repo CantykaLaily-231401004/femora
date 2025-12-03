@@ -109,13 +109,14 @@ class _HomeScreenContent extends StatefulWidget {
 
 class _HomeScreenContentState extends State<_HomeScreenContent> {
   late DateTime _focusedDay;
-  DateTime? _selectedDay;
+  late DateTime _selectedDay;
 
   @override
   void initState() {
     super.initState();
-    _focusedDay = DateTime.now();
-    _selectedDay = _focusedDay;
+    final now = DateTime.now();
+    _focusedDay = now;
+    _selectedDay = now;
     widget.cycleDataService.dailyMoodNotifier.addListener(_onDataChanged);
   }
 

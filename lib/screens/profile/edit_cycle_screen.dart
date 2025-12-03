@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:femora/config/constants.dart';
 
 class EditCycleScreen extends StatefulWidget {
   const EditCycleScreen({Key? key}) : super(key: key);
@@ -9,20 +10,18 @@ class EditCycleScreen extends StatefulWidget {
 }
 
 class _EditCycleScreenState extends State<EditCycleScreen> {
-  DateTime _focusedDayOct = DateTime(2025, 10, 1);
-  DateTime? _selectedDayOct;
+  DateTime _focusedDay = DateTime.now();
+  DateTime? _selectedDay;
   RangeSelectionMode _rangeSelectionMode = RangeSelectionMode.toggledOn;
   DateTime? _rangeStart;
   DateTime? _rangeEnd;
 
-  DateTime _focusedDayNov = DateTime(2025, 11, 1);
-
   @override
   void initState() {
     super.initState();
-    _selectedDayOct = _focusedDayOct;
-    _rangeStart = DateTime(2025, 10, 7);
-    _rangeEnd = DateTime(2025, 10, 11);
+    _selectedDay = _focusedDay;
+    _rangeStart = DateTime.now().subtract(const Duration(days: 4));
+    _rangeEnd = DateTime.now();
   }
 
   @override
@@ -57,9 +56,7 @@ class _EditCycleScreenState extends State<EditCycleScreen> {
         padding: const EdgeInsets.all(20.0),
         child: Column(
           children: [
-            _buildCalendar(true),
-            const SizedBox(height: 20),
-            _buildCalendar(false),
+            _buildCalendar(),
           ],
         ),
       ),
@@ -88,7 +85,7 @@ class _EditCycleScreenState extends State<EditCycleScreen> {
     );
   }
 
-  Widget _buildCalendar(bool isOctober) {
+  Widget _buildCalendar() {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -103,24 +100,20 @@ class _EditCycleScreenState extends State<EditCycleScreen> {
         ],
       ),
       child: TableCalendar(
-        focusedDay: isOctober ? _focusedDayOct : _focusedDayNov,
-        firstDay: DateTime(2025, 1, 1),
-        lastDay: DateTime(2025, 12, 31),
+        focusedDay: _focusedDay,
+        firstDay: DateTime.utc(2020, 1, 1),
+        lastDay: DateTime.utc(2030, 12, 31),
         locale: 'id_ID',
         calendarFormat: CalendarFormat.month,
         rangeSelectionMode: _rangeSelectionMode,
-        selectedDayPredicate: (day) => isSameDay(_selectedDayOct, day),
+        selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
         rangeStartDay: _rangeStart,
         rangeEndDay: _rangeEnd,
         onDaySelected: (selectedDay, focusedDay) {
-          if (!isSameDay(_selectedDayOct, selectedDay)) {
+          if (!isSameDay(_selectedDay, selectedDay)) {
             setState(() {
-              _selectedDayOct = selectedDay;
-              if (isOctober) {
-                _focusedDayOct = focusedDay;
-              } else {
-                _focusedDayNov = focusedDay;
-              }
+              _selectedDay = selectedDay;
+              _focusedDay = focusedDay;
               _rangeStart = null;
               _rangeEnd = null;
               _rangeSelectionMode = RangeSelectionMode.toggledOff;
@@ -129,12 +122,8 @@ class _EditCycleScreenState extends State<EditCycleScreen> {
         },
         onRangeSelected: (start, end, focusedDay) {
           setState(() {
-            _selectedDayOct = null;
-            if (isOctober) {
-              _focusedDayOct = focusedDay;
-            } else {
-              _focusedDayNov = focusedDay;
-            }
+            _selectedDay = null;
+            _focusedDay = focusedDay;
             _rangeStart = start;
             _rangeEnd = end;
             _rangeSelectionMode = RangeSelectionMode.toggledOn;
@@ -164,70 +153,11 @@ class _EditCycleScreenState extends State<EditCycleScreen> {
             shape: BoxShape.circle,
           ),
           todayDecoration: BoxDecoration(
-            color: Colors.transparent, // No special decoration for today
+            color: Colors.transparent,
+            border: Border.all(color: AppColors.primary, width: 1.5),
             shape: BoxShape.circle,
           ),
-        ),
-        calendarBuilders: CalendarBuilders(
-          todayBuilder: (context, day, focusedDay) {
-            if (isSameDay(day, DateTime(2025, 10, 20))) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      '${day.day}',
-                      style: const TextStyle(color: Colors.black),
-                    ),
-                    const Text('😊', style: TextStyle(fontSize: 10)),
-                  ],
-                ),
-              );
-            }
-            return null;
-          },
-          rangeStartBuilder: (context, day, focusedDay) {
-            return Container(
-              margin: const EdgeInsets.all(4.0),
-              alignment: Alignment.center,
-              decoration: const BoxDecoration(
-                color: Color(0xFFF75270),
-                shape: BoxShape.circle,
-              ),
-              child: Text(
-                '${day.day}',
-                style: const TextStyle(color: Colors.white),
-              ),
-            );
-          },
-          rangeEndBuilder: (context, day, focusedDay) {
-            return Container(
-              margin: const EdgeInsets.all(4.0),
-              alignment: Alignment.center,
-              decoration: const BoxDecoration(
-                color: Color(0xFFF75270),
-                shape: BoxShape.circle,
-              ),
-              child: Text(
-                '${day.day}',
-                style: const TextStyle(color: Colors.white),
-              ),
-            );
-          },
-          withinRangeBuilder: (context, day, focusedDay) {
-            return Container(
-              margin: const EdgeInsets.all(4.0),
-              alignment: Alignment.center,
-              decoration: const BoxDecoration(
-                color: Color(0xFFF75270),
-                shape: BoxShape.circle,
-              ),
-              child: Text(
-                '${day.day}',
-                style: const TextStyle(color: Colors.white),
-              ),
-            );
-          },
+           todayTextStyle: TextStyle(color: AppColors.primary),
         ),
       ),
     );

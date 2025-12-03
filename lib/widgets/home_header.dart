@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:femora/config/constants.dart';
+import 'package:femora/widgets/size_config.dart';
 
 class HomeHeader extends StatelessWidget {
   final String userName;
@@ -12,35 +14,49 @@ class HomeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
+    SizeConfig.init(context);
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Text(
-          'Hi, Selamat Pagi',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontFamily: 'Poppins',
-            fontWeight: FontWeight.w400,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Row(
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              userName,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontFamily: 'Poppins',
-                fontWeight: FontWeight.w700,
+              'Hi, Selamat Pagi',
+              style: TextStyle(
+                color: AppColors.white,
+                fontSize: SizeConfig.getFontSize(16),
+                fontFamily: AppTextStyles.fontFamily,
+                fontWeight: FontWeight.w500,
               ),
             ),
-            const SizedBox(width: 7),
-            // TODO: Ganti dengan gambar tangan melambai
-            const Text('👋', style: TextStyle(fontSize: 20)),
+            SizedBox(height: SizeConfig.getHeight(0.5)),
+            Row(
+              children: [
+                Text(
+                  userName, // Menggunakan nama dari properti
+                  style: TextStyle(
+                    color: AppColors.white,
+                    fontSize: SizeConfig.getFontSize(24),
+                    fontFamily: AppTextStyles.fontFamily,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                SizedBox(width: SizeConfig.getWidth(2)),
+                const Text(
+                  '👋',
+                  style: TextStyle(
+                    fontSize: 24,
+                  ),
+                ),
+              ],
+            ),
           ],
+        ),
+        CircleAvatar(
+          radius: 24,
+          backgroundImage: NetworkImage(userImageUrl),
         ),
       ],
     );

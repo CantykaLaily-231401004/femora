@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:femora/config/constants.dart';
-import 'package:femora/config/routes.dart';
 import 'package:femora/widgets/auth_header.dart';
 import 'package:femora/widgets/custom_back_button.dart';
 import 'package:femora/widgets/gradient_background.dart';
@@ -74,18 +73,17 @@ class SignUpScreen extends StatelessWidget {
                         SocialLoginButton(
                           text: 'Lanjutkan dengan Google',
                           iconPath: AppAssets.googleIcon,
-                          onPressed: () {
-                          },
+                          onPressed: () {},
                         ),
                         SizedBox(height: SizeConfig.getHeight(2)),
                         PrimaryButton(
                           text: 'Daftar',
-                          onPressed: () => context.push(AppRoutes.register),
+                          onPressed: () => context.push('/register'),
                         ),
                         SizedBox(height: SizeConfig.getHeight(2)),
                         SecondaryButton(
                           text: 'Masuk',
-                          onPressed: () => context.push(AppRoutes.login),
+                          onPressed: () => context.push('/login'),
                         ),
                       ],
                     ),

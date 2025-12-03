@@ -10,6 +10,22 @@ class CyclePhaseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     SizeConfig.init(context);
+
+    String getIconForPhase() {
+      switch (data.title) {
+        case 'Fase Menstruasi':
+          return 'assets/images/fase_menstruasi.png';
+        case 'Fase Folikular':
+          return 'assets/images/fase_folikular.png';
+        case 'Fase Ovulasi':
+          return 'assets/images/fase_ovulasi.png';
+        case 'Fase Luteal':
+          return 'assets/images/fase_luteal.png';
+        default:
+          return 'assets/images/fase_folikular.png'; // Fallback icon
+      }
+    }
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
@@ -22,15 +38,10 @@ class CyclePhaseCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              // TODO: Ganti dengan ikon fase yang sesuai
-              Container(
+              Image.asset(
+                getIconForPhase(),
                 width: 48,
                 height: 48,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.3),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.bubble_chart, color: Colors.white, size: 24),
               ),
               const SizedBox(width: 10),
               Text(
