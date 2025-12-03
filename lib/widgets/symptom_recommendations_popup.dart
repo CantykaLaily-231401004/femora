@@ -22,6 +22,7 @@ class SymptomRecommendationsPopup extends StatelessWidget {
         .toList();
 
     return Container(
+      height: 476,
       decoration: const BoxDecoration(
         color: Color(0xFFFDEBD0),
         borderRadius: BorderRadius.only(
@@ -32,48 +33,59 @@ class SymptomRecommendationsPopup extends StatelessWidget {
       child: Stack(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(32, 48, 32, 32),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Text(
-                  'Rekomendasi Untukmu 💖',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Color(0xFFF75270),
-                    fontSize: 24,
-                    fontFamily: 'Poppins',
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  'Berdasarkan kondisimu:',
-                  style: TextStyle(
-                    color: Color(0xFFF75270),
-                    fontSize: 18,
-                    fontFamily: 'Poppins',
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                if (applicableRecommendations.isNotEmpty)
-                  ...applicableRecommendations.map(
-                    (rec) => Padding(
-                      padding: const EdgeInsets.only(bottom: 8.0),
-                      child: Text(
-                        rec!,
-                        style: const TextStyle(
-                          color: Color(0xFFF75270),
-                          fontSize: 18,
-                          fontFamily: 'Poppins',
-                          fontWeight: FontWeight.w400,
-                        ),
+            padding: const EdgeInsets.fromLTRB(32, 48, 32, 220), // Space for bottom buttons
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Center(
+                    child: Text(
+                      'Rekomendasi Untukmu 💖',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Color(0xFFF75270),
+                        fontSize: 24,
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
-                const Spacer(),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Berdasarkan kondisimu:',
+                    style: TextStyle(
+                      color: Color(0xFFF75270),
+                      fontSize: 18,
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  if (applicableRecommendations.isNotEmpty)
+                    ...applicableRecommendations.map(
+                      (rec) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8.0),
+                        child: Text(
+                          rec!,
+                          style: const TextStyle(
+                            color: Color(0xFFF75270),
+                            fontSize: 18,
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            left: 32,
+            right: 32,
+            bottom: 32,
+            child: Column(
+              children: [
                 const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
