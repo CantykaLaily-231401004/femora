@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 enum CyclePhase {
-  menstruation,
+  menstrual,
   follicular,
   ovulation,
   luteal,
@@ -44,7 +44,7 @@ class CyclePhaseData {
     tips: "Waktu yang tepat untuk olahraga intens dan memulai proyek baru",
     primaryColor: const Color(0xFF0F8DE1),
     secondaryColor: const Color(0xFF00385D),
-    backgroundColor: const Color(0xBF0F8DE1), // Opacity handled in usage if needed, or use correct hex
+    backgroundColor: const Color(0xBF0F8DE1), 
   );
 
   static CyclePhaseData get ovulation => CyclePhaseData(
@@ -73,8 +73,8 @@ class CyclePhaseData {
     backgroundColor: const Color(0xFFFFB3BA),
   );
   
-   static CyclePhaseData get menstruation => CyclePhaseData(
-    phase: CyclePhase.menstruation,
+   static CyclePhaseData get menstrual => CyclePhaseData(
+    phase: CyclePhase.menstrual,
     title: "Fase Menstruasi",
     subtitle: "Folikular dalam",
     remainingTime: "3 Hari",

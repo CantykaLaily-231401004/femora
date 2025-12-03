@@ -1,12 +1,18 @@
-import 'package:flutter/material.dart';
 import 'package:femora/config/constants.dart';
+import 'package:femora/logic/cycle_phase_logic.dart';
+import 'package:femora/logic/prediction_logic.dart';
+import 'package:femora/models/cycle_data.dart';
 import 'package:femora/models/cycle_phase_data.dart';
+import 'package:femora/services/cycle_data_service.dart';
 import 'package:femora/widgets/bottom_nav_bar.dart';
 import 'package:femora/widgets/cycle_phase_card.dart';
 import 'package:femora/widgets/home_calendar_card.dart';
 import 'package:femora/widgets/home_header.dart';
+import 'package:femora/widgets/menstruation_question_popup.dart';
 import 'package:femora/widgets/size_config.dart';
 import 'package:femora/widgets/gradient_background.dart';
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -16,60 +22,148 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final CyclePhaseData _currentPhase = CyclePhaseData.follicular;
-  bool _isCheckedInToday = false;
-  int _currentIndex = 1; // Atur indeks awal ke tombol Beranda
+  int _currentIndex = 1;
+  final CycleDataService _cycleDataService = CycleDataService();
 
   final List<BottomNavItem> _navItems = const [
-    BottomNavItem(icon: Icons.book_outlined, route: '/insights'), // Sesuaikan dengan ikon dan rute Anda
+    BottomNavItem(icon: Icons.book_outlined, route: '/insights'),
     BottomNavItem(icon: Icons.home_outlined, route: '/home'),
     BottomNavItem(icon: Icons.person_outline, route: '/profile'),
   ];
 
-  void _onDateSelected(DateTime date) {
-    _showMenstruationCheckDialog(context);
-  }
-
-  void _onEditCycle() {
-    print("Edit Cycle clicked");
-  }
-
   void _onNavBarTapped(int index) {
-    setState(() {
-      _currentIndex = index;
-    });
-    // TODO: Terapkan navigasi menggunakan GoRouter atau Navigator
-    // Contoh: context.go(_navItems[index].route);
-  }
-
-  void _showMenstruationCheckDialog(BuildContext context) {
-    // ... (kode dialog yang ada tetap sama)
-  }
-
-  void _showMoodCheckDialog(BuildContext context, bool isMenstruating) {
-    // ... (kode dialog yang ada tetap sama)
-  }
-
-  void _handleMoodSelection(BuildContext context, bool isMenstruating, bool isMoodGood) {
-    // ... (kode dialog yang ada tetap sama)
-  }
-
-  void _showRecommendationDialog(BuildContext context, {required String title, required String subTitle, required String message, Widget? imagePlaceholder}) {
-    // ... (kode dialog yang ada tetap sama)
-  }
-
-  void _showSymptomsCheckDialog(BuildContext context) {
-    // ... (kode dialog yang ada tetap sama)
-  }
-
-  void _showSymptomRecommendationDialog(BuildContext context) {
-    // ... (kode dialog yang ada tetap sama)
+    if (_currentIndex != index) {
+      context.go(_navItems[index].route);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     SizeConfig.init(context);
-    
+
+    return ValueListenableBuilder<CycleData?>(
+      valueListenable: _cycleDataService.cycleDataNotifier,
+      builder: (context, cycleData, child) {
+        final CyclePrediction prediction;
+        if (cycleData != null) {
+          prediction = CyclePrediction(
+            lastPeriodStart: cycleData.lastPeriodStart,
+            periodDuration: cycleData.periodDuration,
+            minCycleLength: cycleData.minCycleLength,
+            maxCycleLength: cycleData.maxCycleLength,
+            isRegular: cycleData.isRegular,
+          );
+        } else {
+          prediction = CyclePrediction(
+            lastPeriodStart: DateTime.now().subtract(const Duration(days: 28)),
+            periodDuration: 5,
+            minCycleLength: 28,
+            maxCycleLength: 28,
+            isRegular: true,
+          );
+        }
+
+        final currentPhase = CyclePhaseLogic.getCurrentPhase(prediction, DateTime.now());
+
+        return ValueListenableBuilder<String?>(
+          valueListenable: _cycleDataService.userNameNotifier,
+          builder: (context, userName, child) {
+            return _HomeScreenContent(
+              prediction: prediction,
+              userName: userName,
+              navItems: _navItems,
+              currentIndex: _currentIndex,
+              onNavBarTapped: _onNavBarTapped,
+              cycleDataService: _cycleDataService,
+              currentPhase: currentPhase,
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _HomeScreenContent extends StatefulWidget {
+  final CyclePrediction prediction;
+  final String? userName;
+  final List<BottomNavItem> navItems;
+  final int currentIndex;
+  final Function(int) onNavBarTapped;
+  final CycleDataService cycleDataService;
+  final CyclePhaseData currentPhase;
+
+  const _HomeScreenContent({
+    required this.prediction,
+    this.userName,
+    required this.navItems,
+    required this.currentIndex,
+    required this.onNavBarTapped,
+    required this.cycleDataService,
+    required this.currentPhase,
+  });
+
+  @override
+  State<_HomeScreenContent> createState() => _HomeScreenContentState();
+}
+
+class _HomeScreenContentState extends State<_HomeScreenContent> {
+  late DateTime _focusedDay;
+  DateTime? _selectedDay;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusedDay = DateTime.now();
+    _selectedDay = _focusedDay;
+    widget.cycleDataService.dailyMoodNotifier.addListener(_onDataChanged);
+  }
+
+  @override
+  void dispose() {
+    widget.cycleDataService.dailyMoodNotifier.removeListener(_onDataChanged);
+    super.dispose();
+  }
+
+  void _onDataChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  void _onDaySelected(DateTime selectedDay, DateTime focusedDay) {
+    final today = DateTime.now();
+    final normalizedToday = DateTime(today.year, today.month, today.day);
+
+    if (widget.cycleDataService.getMoodForDay(normalizedToday) != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Daily check-in sudah dilakukan hari ini.')),
+      );
+      return;
+    }
+
+    setState(() {
+      _focusedDay = focusedDay;
+    });
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      isDismissible: false,
+      enableDrag: false,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const MenstruationQuestionPopup(),
+    );
+  }
+
+  void _onEditCycle() {
+    context.go('/profile/edit_cycle');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final String firstName = widget.userName?.split(' ').first ?? 'Femora';
+
     return Scaffold(
       backgroundColor: AppColors.white,
       body: Stack(
@@ -87,47 +181,56 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Container(),
             ),
           ),
-
           SafeArea(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 20),
-                    const HomeHeader(
-                      userName: 'Ningning',
-                      userImageUrl: "https://placehold.co/24x24", 
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 20),
+                      HomeHeader(
+                        userName: firstName,
+                        userImageUrl: "https://placehold.co/24x24",
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Column(
+                        children: [
+                          HomeCalendarCard(
+                            focusedDay: _focusedDay,
+                            selectedDay: _selectedDay,
+                            onDaySelected: _onDaySelected,
+                            onEditCycle: _onEditCycle,
+                            prediction: widget.prediction,
+                            getMoodForDay: widget.cycleDataService.getMoodForDay,
+                          ),
+                          const SizedBox(height: 15),
+                          CyclePhaseCard(data: widget.currentPhase),
+                          const SizedBox(height: 120),
+                        ],
+                      ),
                     ),
-
-                    const SizedBox(height: 24),
-
-                    HomeCalendarCard(
-                      onDateSelected: _onDateSelected,
-                      isCheckedIn: _isCheckedInToday,
-                      onEditCycle: _onEditCycle,
-                    ),
-
-                    const SizedBox(height: 15),
-
-                    CyclePhaseCard(data: _currentPhase),
-
-                    const SizedBox(height: 100), 
-                  ],
-                ), 
-              ),
+                  ),
+                ),
+              ],
             ),
           ),
-
           Positioned(
             bottom: 30,
             left: 0,
             right: 0,
             child: Center(
               child: CustomBottomNavBar(
-                currentIndex: _currentIndex,
-                onTap: _onNavBarTapped,
-                items: _navItems,
+                currentIndex: widget.currentIndex,
+                onTap: (index) => widget.onNavBarTapped(index),
+                items: widget.navItems,
               ),
             ),
           ),
