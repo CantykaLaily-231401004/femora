@@ -1,65 +1,35 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:femora/config/routes.dart';
-import 'package:femora/config/theme.dart';
-import 'package:intl/date_symbol_data_local.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
-void main() async { // Make main async
-  WidgetsFlutterBinding.ensureInitialized();
-
-  // Initialize date formatting for the Indonesian locale
-  await initializeDateFormatting('id_ID', null);
-  
-  // Set preferred orientations
-  SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
-  
-  // Set system UI overlay style
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
-      systemNavigationBarColor: Colors.white,
-      systemNavigationBarIconBrightness: Brightness.dark,
-    ),
-  );
-  
+void main() {
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      routerConfig: router,
       debugShowCheckedModeBanner: false,
       title: 'Femora',
-      theme: AppTheme.lightTheme,
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFF75270)),
+        useMaterial3: true,
+        fontFamily: 'Poppins', 
+      ),
+      routerConfig: router,
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: const [
-        Locale('id', 'ID'),
+        Locale('id', 'ID'), // Indonesian
+        Locale('en', 'US'), // English
       ],
-      
-      // Builder to access MediaQuery throughout the app
-      builder: (context, child) {
-        return ScrollConfiguration(
-          behavior: const ScrollBehavior().copyWith(physics: const ClampingScrollPhysics()),
-          child: MediaQuery(
-            // Keep text scale factor at 1.0
-            data: MediaQuery.of(context).copyWith(textScaler: TextScaler.noScaling),
-            child: child!,
-          ),
-        );
-      },
+      locale: const Locale('id', 'ID'), // Set default locale to Indonesian
     );
   }
 }
