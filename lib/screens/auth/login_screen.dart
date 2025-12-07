@@ -9,6 +9,8 @@ import 'package:femora/widgets/primary_button.dart';
 import 'package:femora/widgets/gradient_background.dart';
 import 'package:femora/widgets/text_field_custom.dart';
 import 'package:femora/widgets/password_field.dart';
+import'package:provider/provider.dart';
+import 'package:femora/provider/auth_provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -28,6 +30,46 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+void _handleLogin() async {
+  final auth = Provider.of<AuthProvider>(context, listen: false);
+
+  final email = _emailController.text.trim();
+  final password = _passwordController.text.trim();
+
+  // Validasi input
+  if (email.isEmpty || password.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Email dan Kata sandi tidak boleh kosong')),
+    );
+    return;
+  }
+
+  // Proses Login
+  bool ok = await auth.login(email: email, password: password);
+
+  if (ok) {
+    if (!mounted) return;
+    context.go(AppRoutes.home); // redirect setelah login
+  } else {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(auth.errorMessage)),
+    );
+  }
+}
+
+void _handleGoogleLogin() async {
+  final auth = Provider.of<AuthProvider>(context, listen: false);
+
+  bool ok = await auth.loginWithGoogle();
+
+  if (ok) {
+    if (!mounted) return;
+    context.go(AppRoutes.home);
+  } else {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(auth.errorMessage)));
   void _handleLogin() {
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -37,6 +79,8 @@ class _LoginScreenState extends State<LoginScreen> {
     }
     context.go('/home');
   }
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -147,6 +191,55 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         SizedBox(height: SizeConfig.getHeight(3)),
 
+                        const Text(
+                          'Atau lanjutkan dengan',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 14,
+                          ),
+                        ),
+                        SizedBox(height: SizeConfig.getHeight(2)),
+
+                        Center(
+                          child: GestureDetector(
+                            onTap: _handleGoogleLogin,
+                            child: Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                border: Border.all(color: AppColors.borderColor, width: 1),
+                                borderRadius: BorderRadius.circular(15)
+                              ),
+                              child: Image.asset(AppAssets.googleIcon, width: 28, height: 28),
+                            ),
+                          ),
+                        ),
+
+                        SizedBox(height: SizeConfig.getHeight(3)),
+
+                        Center(
+                          child: GestureDetector(
+                            onTap: () => context.replace(AppRoutes.register),
+                            child: RichText(
+                              text: const TextSpan(
+                                text: 'Belum punya akun? ',
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 14,
+                                  fontFamily: AppTextStyles.fontFamily,
+                                ),
+                                children: [
+                                  TextSpan(
+                                    text: 'Daftar',
+                                    style: TextStyle(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         AuthFooter(
                           bottomText: 'Belum punya akun?',
                           actionText: 'Daftar',
