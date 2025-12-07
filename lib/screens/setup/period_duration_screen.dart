@@ -1,7 +1,7 @@
+import 'package:femora/services/cycle_data_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:femora/config/routes.dart';
 import 'package:femora/config/constants.dart';
 import 'package:femora/widgets/custom_back_button.dart';
 import 'package:femora/widgets/primary_button.dart';
@@ -16,9 +16,9 @@ class PeriodDurationScreen extends StatefulWidget {
 }
 
 class _PeriodDurationScreenState extends State<PeriodDurationScreen> {
-  int _selectedDuration = 3;
+  int _selectedDuration = 5;
   final int _minDuration = 1;
-  final int _maxDuration = 30;
+  final int _maxDuration = 15;
 
   @override
   Widget build(BuildContext context) {
@@ -107,7 +107,8 @@ class _PeriodDurationScreenState extends State<PeriodDurationScreen> {
               child: PrimaryButton(
                 text: 'Lanjutkan',
                 onPressed: () {
-                  context.push(AppRoutes.cycleLength);
+                  CycleDataService().setPeriodDuration(_selectedDuration);
+                  context.push('/cycle-length');
                 },
               ),
             ),

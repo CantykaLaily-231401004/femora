@@ -1,8 +1,10 @@
+
 import 'package:femora/config/routes.dart';
+import 'package:femora/services/cycle_data_service.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:femora/config/constants.dart';
-import 'package:femora/config/routes.dart';
+import 'package:femora/widgets/auth_footer.dart';
 import 'package:femora/widgets/auth_header.dart';
 import 'package:femora/widgets/size_config.dart';
 import 'package:femora/widgets/custom_back_button.dart';
@@ -227,6 +229,9 @@ void _handleGoogleLogin() async {
                                           return;
                                         }
                                         _handleSignUp();
+                                        // "Menabung" nama ke brankas data
+                                        CycleDataService().setFullName(_nameController.text);
+                                        context.push('/profile-setup');
                                       }
                                     : null,
                               ),
@@ -234,7 +239,7 @@ void _handleGoogleLogin() async {
                           ),
                         ),
 
-                        SizedBox(height: SizeConfig.getHeight(2.5)),
+                        SizedBox(height: SizeConfig.getHeight(3)),
 
                         Text(
                           'atau hubungkan dengan',
@@ -285,8 +290,12 @@ void _handleGoogleLogin() async {
                               ),
                             ),
                           ),
+                        AuthFooter(
+                          bottomText: 'Sudah punya akun?',
+                          actionText: 'Masuk',
+                          onAction: () => context.replace('/login'),
                         ),
-                        SizedBox(height: SizeConfig.getHeight(2)), // Extra space at bottom
+                        SizedBox(height: SizeConfig.getHeight(2)),
                       ],
                     ),
                   ),

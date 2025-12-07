@@ -4,7 +4,6 @@ import 'package:femora/models/onboarding_content.dart';
 import 'package:femora/config/constants.dart';
 import 'package:femora/widgets/size_config.dart';
 import 'package:femora/widgets/primary_button.dart';
-import 'package:femora/config/routes.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({Key? key}) : super(key: key);
@@ -65,7 +64,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   void _navigateToSignUp() {
-    context.push(AppRoutes.signup);
+    context.push('/signup');
   }
 
   @override

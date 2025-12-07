@@ -1,26 +1,24 @@
+import 'package:femora/logic/prediction_logic.dart';
 import 'package:flutter/material.dart';
 import 'package:femora/widgets/custom_calendar.dart';
-import 'package:femora/config/constants.dart';
 
-class HomeCalendarCard extends StatefulWidget {
-  final Function(DateTime) onDateSelected;
-  final bool isCheckedIn;
+class HomeCalendarCard extends StatelessWidget {
+  final DateTime focusedDay;
+  final DateTime? selectedDay;
+  final Function(DateTime, DateTime) onDaySelected;
   final VoidCallback onEditCycle;
+  final CyclePrediction prediction;
+  final String? Function(DateTime) getMoodForDay;
 
   const HomeCalendarCard({
     Key? key,
-    required this.onDateSelected,
+    required this.focusedDay,
+    this.selectedDay,
+    required this.onDaySelected,
     required this.onEditCycle,
-    this.isCheckedIn = false,
+    required this.prediction,
+    required this.getMoodForDay,
   }) : super(key: key);
-
-  @override
-  State<HomeCalendarCard> createState() => _HomeCalendarCardState();
-}
-
-class _HomeCalendarCardState extends State<HomeCalendarCard> {
-  DateTime _focusedDay = DateTime.now();
-  DateTime? _selectedDay;
 
   @override
   Widget build(BuildContext context) {
@@ -43,13 +41,12 @@ class _HomeCalendarCardState extends State<HomeCalendarCard> {
         mainAxisSize: MainAxisSize.min,
         children: [
           CustomCalendar(
-            focusedDay: _focusedDay,
-            selectedDay: _selectedDay,
-            onDaySelected: (selectedDay, focusedDay) {
-              // Hanya panggil callback, hapus setState untuk menghindari konflik
-              widget.onDateSelected(selectedDay);
-            },
-            isTodayCheckedIn: widget.isCheckedIn,
+            locale: 'id_ID',
+            focusedDay: focusedDay,
+            selectedDay: selectedDay,
+            onDaySelected: onDaySelected,
+            prediction: prediction,
+            getMoodForDay: getMoodForDay,
           ),
           const SizedBox(height: 15),
           Row(
@@ -68,7 +65,7 @@ class _HomeCalendarCardState extends State<HomeCalendarCard> {
                 ),
               ),
               GestureDetector(
-                onTap: widget.onEditCycle,
+                onTap: onEditCycle,
                 child: const Text(
                   'Edit Siklus',
                   textAlign: TextAlign.center,

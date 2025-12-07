@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:femora/config/constants.dart';
-import 'package:femora/config/routes.dart';
 import 'package:femora/widgets/size_config.dart';
-import 'package:femora/widgets/social_login_button.dart';
 
 class AuthFooter extends StatelessWidget {
   final String bottomText;
@@ -22,37 +19,34 @@ class AuthFooter extends StatelessWidget {
     SizeConfig.init(context);
     return Column(
       children: [
-        // Or Divider
-        Row(
-          children: [
-            const Expanded(child: Divider(color: AppColors.lightGrey)),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: SizeConfig.getWidth(4)),
-              child: Text(
-                'Atau',
-                style: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: SizeConfig.getFontSize(14),
-                  fontFamily: AppTextStyles.fontFamily,
-                ),
-              ),
-            ),
-            const Expanded(child: Divider(color: AppColors.lightGrey)),
-          ],
+        const Text(
+          'atau hubungkan dengan',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 14,
+          ),
         ),
-
-        SizedBox(height: SizeConfig.getHeight(2.5)),
+        SizedBox(height: SizeConfig.getHeight(2)),
 
         // Social Login
-        SocialLoginButton(
-          text: 'Masuk dengan Google',
-          iconPath: AppAssets.googleIcon,
-          onPressed: () {
-            // TODO: Implement Google Sign In
-          },
+        Center(
+          child: GestureDetector(
+            onTap: () {
+              // TODO: Google Sign In
+            },
+            child: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                border: Border.all(color: AppColors.borderColor, width: 1),
+                borderRadius: BorderRadius.circular(15)
+              ),
+              child: Image.asset(AppAssets.googleIcon, width: 28, height: 28),
+            ),
+          ),
         ),
 
-        SizedBox(height: SizeConfig.getHeight(5)),
+        SizedBox(height: SizeConfig.getHeight(3)),
 
         // Bottom Text
         _FooterLink(
@@ -85,16 +79,16 @@ class _FooterLink extends StatelessWidget {
         text: TextSpan(
           text: '$text ',
           style: TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: SizeConfig.getFontSize(12),
+            color: AppColors.textPrimary, // Changed to black
+            fontSize: SizeConfig.getFontSize(14),
             fontFamily: AppTextStyles.fontFamily,
           ),
           children: [
             TextSpan(
               text: linkText,
               style: const TextStyle(
-                color: AppColors.primary,
-                fontWeight: FontWeight.bold,
+                color: AppColors.primary, // Changed to pink
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],

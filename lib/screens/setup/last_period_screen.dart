@@ -1,7 +1,8 @@
+import 'package:femora/models/cycle_data.dart';
+import 'package:femora/services/cycle_data_service.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'package:femora/config/routes.dart';
 import 'package:femora/config/constants.dart';
 import 'package:femora/widgets/custom_back_button.dart';
 import 'package:femora/widgets/primary_button.dart';
@@ -141,7 +142,14 @@ class _LastPeriodScreenState extends State<LastPeriodScreen> {
               child: PrimaryButton(
                 text: 'Selesai',
                 onPressed: () {
-                   context.go(AppRoutes.home);
+                  // Simpan data terakhir ke 'brankas'
+                  CycleDataService().setLastPeriodStart(_rangeStart ?? DateTime.now());
+
+                  // Kunci semua data yang sudah disimpan
+                  CycleDataService().finalizeData();
+
+                  // Navigasi ke home. HomeScreen akan mengambil data dari brankas.
+                  context.go('/home');
                 },
               ),
             ),

@@ -1,3 +1,4 @@
+import 'package:femora/logic/prediction_logic.dart';
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:femora/config/constants.dart';
@@ -10,15 +11,21 @@ class CustomCalendar extends StatelessWidget {
   final CalendarFormat calendarFormat;
   final Function(CalendarFormat)? onFormatChanged;
   final bool isTodayCheckedIn;
+  final String? locale;
+  final CyclePrediction? prediction;
+  final String? Function(DateTime) getMoodForDay;
 
   const CustomCalendar({
     Key? key,
     required this.focusedDay,
-    required this.selectedDay,
+    this.selectedDay,
     required this.onDaySelected,
     this.calendarFormat = CalendarFormat.month,
     this.onFormatChanged,
     this.isTodayCheckedIn = false,
+    this.locale,
+    this.prediction,
+    required this.getMoodForDay,
   }) : super(key: key);
 
   @override
@@ -39,32 +46,82 @@ class CustomCalendar extends StatelessWidget {
         ],
       ),
       child: TableCalendar(
+        locale: locale,
         firstDay: DateTime.utc(2020, 1, 1),
         lastDay: DateTime.utc(2030, 12, 31),
         focusedDay: focusedDay,
         calendarFormat: calendarFormat,
-        selectedDayPredicate: (day) {
-          return isSameDay(selectedDay, day);
-        },
         onDaySelected: onDaySelected,
         onFormatChanged: onFormatChanged,
+        // The selectedDayPredicate now only checks for today's date.
+        selectedDayPredicate: (day) => isSameDay(DateTime.now(), day),
         calendarBuilders: CalendarBuilders(
-          markerBuilder: (context, date, events) {
-            if (isSameDay(date, DateTime.now()) && isTodayCheckedIn) {
+          markerBuilder: (context, day, events) {
+            final mood = getMoodForDay(day);
+            if (mood != null) {
               return Positioned(
-                bottom: 4, // Adjust position
-                child: Container(
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    // You can add a background color if needed
-                  ),
-                  child: const Text(
-                    '😊', // Placeholder emoticon
-                    style: TextStyle(fontSize: 12),
+                right: 1,
+                bottom: 1,
+                child: Text(mood, style: const TextStyle(fontSize: 12)),
+              );
+            }
+            return null;
+          },
+          prioritizedBuilder: (context, day, focusedDay) {
+            // Prioritas 1: Hari Ini (Selalu diutamakan)
+            if (isSameDay(day, DateTime.now())) {
+              return Center(
+                child: Text(
+                  '${day.day}',
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               );
             }
+
+            // Prioritas 2: Do not show a selected day circle on other dates.
+            // The logic for the selected day circle has been removed.
+
+            if (prediction != null) {
+              // Prioritas 3: Periode Menstruasi Terakhir
+              final lastPeriodEnd = prediction!.lastPeriodStart.add(Duration(days: prediction!.periodDuration - 1));
+              if (!day.isBefore(prediction!.lastPeriodStart) && !day.isAfter(lastPeriodEnd)) {
+                return Container(
+                  margin: const EdgeInsets.all(4.0),
+                  alignment: Alignment.center,
+                  decoration: const BoxDecoration(
+                    color: AppColors.primary,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Text(
+                    '${day.day}',
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                );
+              }
+
+              // Prioritas 4: Periode Prediksi
+              if (prediction!.predictedPeriodStart != null && prediction!.predictedPeriodEnd != null) {
+                if (!day.isBefore(prediction!.predictedPeriodStart!) && !day.isAfter(prediction!.predictedPeriodEnd!)) {
+                  return Container(
+                    margin: const EdgeInsets.all(4.0),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.4),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(
+                      '${day.day}',
+                      style: const TextStyle(color: Colors.black87),
+                    ),
+                  );
+                }
+              }
+            }
+
+            // Jika tidak ada aturan yang cocok, kembalikan null
             return null;
           },
         ),
@@ -89,14 +146,9 @@ class CustomCalendar extends StatelessWidget {
           ),
         ),
         calendarStyle: CalendarStyle(
-          selectedDecoration: const BoxDecoration(
-            color: AppColors.primary,
-            shape: BoxShape.circle,
-          ),
-          todayDecoration: BoxDecoration(
-            color: AppColors.primaryLight,
-            shape: BoxShape.circle,
-          ),
+          // Kosongkan gaya yang berpotensi konflik
+          selectedDecoration: const BoxDecoration(),
+          todayDecoration: const BoxDecoration(),
           defaultTextStyle: TextStyle(
             fontFamily: AppTextStyles.fontFamily,
             fontSize: SizeConfig.getFontSize(14),

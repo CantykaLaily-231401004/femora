@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:femora/config/constants.dart';
-import 'package:femora/config/routes.dart';
 import 'package:femora/widgets/auth_header.dart';
 import 'package:femora/widgets/size_config.dart';
 import 'package:femora/widgets/custom_back_button.dart';
@@ -32,7 +31,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       );
       return;
     }
-    context.push(AppRoutes.resetPassword);
+    context.push('/reset-password');
   }
 
   @override
