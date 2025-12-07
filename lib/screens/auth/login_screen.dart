@@ -9,6 +9,8 @@ import 'package:femora/widgets/primary_button.dart';
 import 'package:femora/widgets/gradient_background.dart';
 import 'package:femora/widgets/text_field_custom.dart';
 import 'package:femora/widgets/password_field.dart';
+import'package:provider/provider.dart';
+import 'package:femora/provider/auth_provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -28,15 +30,49 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _handleLogin() {
-    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Email dan Kata sandi tidak boleh kosong')),
-      );
-      return;
-    }
-    context.go(AppRoutes.home);
+void _handleLogin() async {
+  final auth = Provider.of<AuthProvider>(context, listen: false);
+
+  final email = _emailController.text.trim();
+  final password = _passwordController.text.trim();
+
+  // Validasi input
+  if (email.isEmpty || password.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Email dan Kata sandi tidak boleh kosong')),
+    );
+    return;
   }
+
+  // Proses Login
+  bool ok = await auth.login(email: email, password: password);
+
+  if (ok) {
+    if (!mounted) return;
+    context.go(AppRoutes.home); // redirect setelah login
+  } else {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(auth.errorMessage)),
+    );
+  }
+}
+
+void _handleGoogleLogin() async {
+  final auth = Provider.of<AuthProvider>(context, listen: false);
+
+  bool ok = await auth.loginWithGoogle();
+
+  if (ok) {
+    if (!mounted) return;
+    context.go(AppRoutes.home);
+  } else {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(auth.errorMessage)));
+  }
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -159,9 +195,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         Center(
                           child: GestureDetector(
-                            onTap: () {
-                              // TODO: Google Sign In
-                            },
+                            onTap: _handleGoogleLogin,
                             child: Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(

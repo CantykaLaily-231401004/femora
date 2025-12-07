@@ -37,6 +37,26 @@ class AppAssets {
   static const String onboarding2 = 'assets/images/onboarding2.png'; // Placeholder name
   static const String onboarding3 = 'assets/images/onboarding3.png'; // Placeholder name
   static const String googleIcon = 'assets/images/Google_Icon.png';
+
+  // --- Ikon Riwayat BARU dari assets/icon/ ---
+  // Gejala
+  static const String sakitKepala = 'assets/icon/sakit_kepala.png'; 
+  static const String siklusTidakTeratur = 'assets/icon/siklus_tidak_teratur.png';
+  static const String beratBadanBertambah = 'assets/icon/berat_badan_bertambah.png'; // ✅ TAMBAHAN BARU
+  
+  // Pengobatan
+  static const String krimPelembab = 'assets/icon/krim_pelembab.png';
+  static const String obatPil = 'assets/icon/obat_pil.png';
+  static const String obatTempel = 'assets/icon/obat_tempel.png';
+  
+  // Aliran (Asumsi di assets/images)
+  static const String flowLow = 'assets/images/flow_low.png'; 
+  static const String flowNormal = 'assets/images/flow_normal.png'; 
+  static const String flowHeavy = 'assets/images/flow_heavy.png'; 
+  
+  // Suasana Hati (Asumsi di assets/images)
+  static const String moodBaikIcon = 'assets/images/mood_baik.png'; 
+  static const String moodBurukIcon = 'assets/images/mood_buruk.png'; 
 }
 
 class AppBorderRadius {

@@ -3,20 +3,25 @@ import 'package:flutter/services.dart';
 import 'package:femora/config/routes.dart';
 import 'package:femora/config/theme.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:provider/provider.dart';
 
-void main() async { // Make main async
+import 'firebase_options.dart';
+import 'package:femora/provider/auth_provider.dart';
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize date formatting for the Indonesian locale
+  // Initialize date formatting for Indonesian locale
   await initializeDateFormatting('id_ID', null);
-  
+
   // Set Orientations
-  SystemChrome.setPreferredOrientations([
+  await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
-  
-  // Set system UI overlay style
+
+  // System UI Style
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -25,7 +30,12 @@ void main() async { // Make main async
       systemNavigationBarIconBrightness: Brightness.dark,
     ),
   );
-  
+
+  // Init Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
   runApp(const MyApp());
 }
 
@@ -34,23 +44,31 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      routerConfig: router,
-      debugShowCheckedModeBanner: false,
-      title: 'Femora',
-      theme: AppTheme.lightTheme,
-      
-      // Builder to access MediaQuery throughout the app
-      builder: (context, child) {
-        return ScrollConfiguration(
-          behavior: const ScrollBehavior().copyWith(physics: const ClampingScrollPhysics()),
-          child: MediaQuery(
-            // Keep text scale factor at 1.0
-            data: MediaQuery.of(context).copyWith(textScaler: TextScaler.noScaling),
-            child: child!,
-          ),
-        );
-      },
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<AuthProvider>(
+          create: (_) => AuthProvider(),
+        ),
+      ],
+      child: MaterialApp.router(
+        routerConfig: router,
+        debugShowCheckedModeBanner: false,
+        title: 'Femora',
+        theme: AppTheme.lightTheme,
+
+        builder: (context, child) {
+          return ScrollConfiguration(
+            behavior: const ScrollBehavior().copyWith(
+              physics: const ClampingScrollPhysics(),
+            ),
+            child: MediaQuery(
+              data: MediaQuery.of(context)
+                  .copyWith(textScaler: TextScaler.noScaling),
+              child: child!,
+            ),
+          );
+        },
+      ),
     );
   }
 }

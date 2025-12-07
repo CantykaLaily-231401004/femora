@@ -9,7 +9,8 @@ import 'package:femora/widgets/primary_button.dart';
 import 'package:femora/widgets/gradient_background.dart';
 import 'package:femora/widgets/text_field_custom.dart';
 import 'package:femora/widgets/password_field.dart';
-
+import 'package:provider/provider.dart';
+import 'package:femora/provider/auth_provider.dart';
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({Key? key}) : super(key: key);
 
@@ -20,9 +21,57 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   bool _isAgreed = false;
 
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
+    final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+void _handleSignUp() async {
+  final auth = Provider.of<AuthProvider>(context, listen: false);
+
+  final name = _nameController.text.trim();
+  final email = _emailController.text.trim();
+  final password = _passwordController.text.trim();
+
+  // Validasi Input
+  if (name.isEmpty || email.isEmpty || password.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Semua field harus diisi')),
+    );
+    return;
+  }
+
+  // Proses Sign Up
+  bool ok = await auth.signUp(
+    fullName: name,
+    email: email,
+    password: password,
+  );
+
+  if (ok) {
+    if (!mounted) return;
+    context.go(AppRoutes.home); // redirect
+  } else {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(auth.errorMessage)),
+    );
+  }
+}
+
+void _handleGoogleLogin() async {
+  final auth = Provider.of<AuthProvider>(context, listen: false);
+
+  bool ok = await auth.loginWithGoogle();
+
+  if (ok) {
+    if (!mounted) return;
+    context.go(AppRoutes.home);
+  } else {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(auth.errorMessage)));
+  }
+}
 
   @override
   void dispose() {
@@ -176,7 +225,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                           );
                                           return;
                                         }
-                                        context.push(AppRoutes.profileSetup);
+                                        _handleSignUp();
                                       }
                                     : null,
                               ),
@@ -198,9 +247,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                         Center(
                           child: GestureDetector(
-                            onTap: () {
-                              // TODO: Google Sign In
-                            },
+                            onTap: _handleGoogleLogin,
                             child: Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
