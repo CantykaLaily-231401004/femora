@@ -3,6 +3,7 @@ import 'package:femora/config/theme.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
+import 'package:femora/provider/history_provider.dart';
 
 import 'firebase_options.dart';
 import 'package:femora/provider/auth_provider.dart';
@@ -51,7 +52,11 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider<AuthProvider>(
           create: (_) => AuthProvider(),
         ),
+        ChangeNotifierProvider<HistoryProvider>(
+          create: (_) => HistoryProvider(),
+        ),
       ],
+      
       child: MaterialApp.router(
         routerConfig: router,
         debugShowCheckedModeBanner: false,
