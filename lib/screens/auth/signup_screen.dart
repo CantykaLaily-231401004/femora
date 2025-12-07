@@ -8,33 +8,10 @@ import 'package:femora/widgets/primary_button.dart';
 import 'package:femora/widgets/secondary_button.dart';
 import 'package:femora/widgets/size_config.dart';
 import 'package:femora/widgets/social_login_button.dart';
-import 'package:provider/provider.dart';
-import 'package:femora/provider/auth_provider.dart';
 
+class SignUpScreen extends StatelessWidget {
+  const SignUpScreen({Key? key}) : super(key: key);
 
-class SignUpScreen extends StatefulWidget {
-  const SignUpScreen({super.key});
-
-  @override
-  State<SignUpScreen> createState() => _SignUpScreenState();
-}
-
-class _SignUpScreenState extends State<SignUpScreen> {
-
-void _handleGoogleLogin() async {
-  final auth = Provider.of<AuthProvider>(context, listen: false);
-
-  bool ok = await auth.loginWithGoogle();
-
-  if (ok) {
-    if (!mounted) return;
-    context.go(AppRoutes.home);
-  } else {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(auth.errorMessage)));
-  }
-}
   @override
   Widget build(BuildContext context) {
     SizeConfig.init(context);
@@ -96,7 +73,6 @@ void _handleGoogleLogin() async {
                         SocialLoginButton(
                           text: 'Lanjutkan dengan Google',
                           iconPath: AppAssets.googleIcon,
-                          onPressed: _handleGoogleLogin,
                           onPressed: () {},
                         ),
                         SizedBox(height: SizeConfig.getHeight(2)),

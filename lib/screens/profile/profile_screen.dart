@@ -1,8 +1,6 @@
 import 'package:femora/config/constants.dart';
 import 'package:femora/widgets/page_header.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:femora/config/routes.dart'; 
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -122,7 +120,7 @@ class ProfileScreen extends StatelessWidget {
             context,
             icon: Icons.history,
             title: 'Riwayat',
-            onTap: () => context.push(AppRoutes.history), // <-- NAVIGASI RIWAYAT DIPERBARUI
+            onTap: () { /* TODO: Navigate to History */ },
           ),
           _buildProfileOption(
             context,
