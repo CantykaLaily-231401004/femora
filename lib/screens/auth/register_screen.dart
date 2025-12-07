@@ -1,3 +1,5 @@
+
+import 'package:femora/config/routes.dart';
 import 'package:femora/services/cycle_data_service.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -50,7 +52,7 @@ void _handleSignUp() async {
 
   if (ok) {
     if (!mounted) return;
-    context.go(AppRoutes.home); // redirect
+    context.go(AppRoutes.profileSetup); // redirect
   } else {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
