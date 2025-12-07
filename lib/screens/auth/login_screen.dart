@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:femora/config/constants.dart';
-import 'package:femora/config/routes.dart';
+import 'package:femora/widgets/auth_footer.dart';
 import 'package:femora/widgets/auth_header.dart';
 import 'package:femora/widgets/size_config.dart';
 import 'package:femora/widgets/custom_back_button.dart';
@@ -70,6 +70,14 @@ void _handleGoogleLogin() async {
     if (!mounted) return;
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(auth.errorMessage)));
+  void _handleLogin() {
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Email dan Kata sandi tidak boleh kosong')),
+      );
+      return;
+    }
+    context.go('/home');
   }
 }
 
@@ -157,7 +165,7 @@ void _handleGoogleLogin() async {
                               Align(
                                 alignment: Alignment.centerRight,
                                 child: TextButton(
-                                  onPressed: () => context.push(AppRoutes.forgotPassword),
+                                  onPressed: () => context.push('/forgot-password'),
                                   child: const Text(
                                     'Lupa Kata Sandi?',
                                     style: TextStyle(
@@ -232,40 +240,14 @@ void _handleGoogleLogin() async {
                               ),
                             ),
                           ),
+                        AuthFooter(
+                          bottomText: 'Belum punya akun?',
+                          actionText: 'Daftar',
+                          onAction: () => context.replace('/register'),
                         ),
                          SizedBox(height: SizeConfig.getHeight(2)),
                       ],
                     ),
-                  ),
-                ),
-
-                // Bottom Policy Text
-                Padding(
-                  padding: EdgeInsets.symmetric(
-                    vertical: SizeConfig.getHeight(2),
-                    horizontal: SizeConfig.getWidth(5),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Kebijakan Privasi',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: SizeConfig.getFontSize(12),
-                          fontFamily: AppTextStyles.fontFamily,
-                        ),
-                      ),
-                      SizedBox(width: SizeConfig.getWidth(8)),
-                      Text(
-                        'Syarat & Ketentuan',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: SizeConfig.getFontSize(12),
-                          fontFamily: AppTextStyles.fontFamily,
-                        ),
-                      ),
-                    ],
                   ),
                 ),
               ],

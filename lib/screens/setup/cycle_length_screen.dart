@@ -1,7 +1,7 @@
+import 'package:femora/services/cycle_data_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:femora/config/routes.dart';
 import 'package:femora/config/constants.dart';
 import 'package:femora/widgets/custom_back_button.dart';
 import 'package:femora/widgets/primary_button.dart';
@@ -22,38 +22,6 @@ class _CycleLengthScreenState extends State<CycleLengthScreen> {
 
   final int _minCycle = 15;
   final int _maxCycle = 45;
-
-  Widget _buildPicker({
-    required int initialItem,
-    required Function(int) onSelectedItemChanged,
-  }) {
-    return SizedBox(
-      width: SizeConfig.getWidth(30),
-      height: SizeConfig.getHeight(30),
-      child: CupertinoPicker(
-        scrollController: FixedExtentScrollController(initialItem: initialItem),
-        itemExtent: 50,
-        onSelectedItemChanged: onSelectedItemChanged,
-        children: List<Widget>.generate(_maxCycle - _minCycle + 1, (int index) {
-          final int currentDay = index + _minCycle;
-          return Center(
-            child: Text(
-              '$currentDay',
-              style: TextStyle(
-                color: (currentDay == _startCycle || currentDay == _endCycle)
-                    ? AppColors.primary
-                    : AppColors.textSecondary,
-                fontSize: (currentDay == _startCycle || currentDay == _endCycle) ? 28 : 24,
-                fontWeight: (currentDay == _startCycle || currentDay == _endCycle)
-                    ? FontWeight.w600
-                    : FontWeight.w400,
-              ),
-            ),
-          );
-        }),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -129,12 +97,49 @@ class _CycleLengthScreenState extends State<CycleLengthScreen> {
               child: PrimaryButton(
                 text: 'Lanjutkan',
                 onPressed: () {
-                   context.push(AppRoutes.lastPeriod);
+                  CycleDataService().setCycleLength(
+                    min: _startCycle,
+                    max: _isRegular ? _startCycle : _endCycle,
+                    isRegular: _isRegular,
+                  );
+                  context.push('/last-period');
                 },
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildPicker({
+    required int initialItem,
+    required Function(int) onSelectedItemChanged,
+  }) {
+    return SizedBox(
+      width: SizeConfig.getWidth(30),
+      height: SizeConfig.getHeight(30),
+      child: CupertinoPicker(
+        scrollController: FixedExtentScrollController(initialItem: initialItem),
+        itemExtent: 50,
+        onSelectedItemChanged: onSelectedItemChanged,
+        children: List<Widget>.generate(_maxCycle - _minCycle + 1, (int index) {
+          final int currentDay = index + _minCycle;
+          return Center(
+            child: Text(
+              '$currentDay',
+              style: TextStyle(
+                color: (currentDay == _startCycle || currentDay == _endCycle)
+                    ? AppColors.primary
+                    : AppColors.textSecondary,
+                fontSize: (currentDay == _startCycle || currentDay == _endCycle) ? 28 : 24,
+                fontWeight: (currentDay == _startCycle || currentDay == _endCycle)
+                    ? FontWeight.w600
+                    : FontWeight.w400,
+              ),
+            ),
+          );
+        }),
       ),
     );
   }

@@ -12,14 +12,20 @@ class AppColors {
   
   static const Color background = Colors.white;
   static const Color textPrimary = Colors.black;
-  static const Color textSecondary = Color(0xFF808080);
+  static const Color textSecondary = Color(0xFF6B6B6B); // Darkened Grey
   static const Color textHighlight = Color(0xFFDC143C);
   static const Color borderColor = Color(0xFFF1F1F1);
-  static const Color borderColorDark = Color(0xFFCCCCCC); // Added this
+  static const Color borderColorDark = Color(0xFFCCCCCC);
   
   static const Color gradientStart = Color(0xFFF75270);
   static const Color gradientMiddle = Color(0xFFFDEBD0);
   static const Color gradientEnd = Colors.white;
+
+  static const LinearGradient backgroundGradient = LinearGradient(
+    colors: [gradientStart, Color(0xFFF76B85)],
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+  );
 }
 
 class AppFonts {

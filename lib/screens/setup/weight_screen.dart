@@ -1,7 +1,7 @@
+import 'package:femora/services/cycle_data_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:femora/config/routes.dart';
 import 'package:femora/config/constants.dart';
 import 'package:femora/widgets/custom_back_button.dart';
 import 'package:femora/widgets/primary_button.dart';
@@ -107,7 +107,8 @@ class _WeightScreenState extends State<WeightScreen> {
               child: PrimaryButton(
                 text: 'Lanjutkan',
                 onPressed: () {
-                  context.push(AppRoutes.periodDuration);
+                  CycleDataService().setWeight(_selectedWeight);
+                  context.push('/period-duration');
                 },
               ),
             ),

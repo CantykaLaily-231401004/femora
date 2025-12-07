@@ -1,7 +1,7 @@
+import 'package:femora/services/cycle_data_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:femora/config/routes.dart';
 import 'package:femora/config/constants.dart';
 import 'package:femora/widgets/custom_back_button.dart';
 import 'package:femora/widgets/primary_button.dart';
@@ -48,38 +48,6 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
   List<int> _getDaysInMonth(int year, int month) {
     return List.generate(DateTime(year, month + 1, 0).day, (index) => index + 1);
-  }
-
-  Widget _buildPicker({
-    required List<dynamic> items,
-    required dynamic selectedItem,
-    required FixedExtentScrollController controller,
-    required Function(int) onSelectedItemChanged,
-    double? width,
-  }) {
-    return SizedBox(
-      width: width ?? SizeConfig.getWidth(25),
-      height: SizeConfig.getHeight(30),
-      child: CupertinoPicker(
-        looping: true,
-        scrollController: controller,
-        itemExtent: 50,
-        onSelectedItemChanged: onSelectedItemChanged,
-        children: items.map((item) {
-          final isSelected = (item == selectedItem);
-          return Center(
-            child: Text(
-              '$item',
-              style: TextStyle(
-                color: isSelected ? AppColors.primary : AppColors.textSecondary.withOpacity(0.7),
-                fontSize: isSelected ? 24 : 20,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-              ),
-            ),
-          );
-        }).toList(),
-      ),
-    );
   }
 
   @override
@@ -174,11 +142,47 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
               padding: EdgeInsets.fromLTRB(SizeConfig.getWidth(5), 20, SizeConfig.getWidth(5), 35),
               child: PrimaryButton(
                 text: 'Lanjutkan',
-                onPressed: () => context.push(AppRoutes.weight),
+                onPressed: () {
+                  final birthDate = DateTime(_selectedYear, _selectedMonth, _selectedDay);
+                  CycleDataService().setBirthDate(birthDate);
+                  context.push('/weight');
+                },
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildPicker({
+    required List<dynamic> items,
+    required dynamic selectedItem,
+    required FixedExtentScrollController controller,
+    required Function(int) onSelectedItemChanged,
+    double? width,
+  }) {
+    return SizedBox(
+      width: width ?? SizeConfig.getWidth(25),
+      height: SizeConfig.getHeight(30),
+      child: CupertinoPicker(
+        looping: true,
+        scrollController: controller,
+        itemExtent: 50,
+        onSelectedItemChanged: onSelectedItemChanged,
+        children: items.map((item) {
+          final isSelected = (item == selectedItem);
+          return Center(
+            child: Text(
+              '$item',
+              style: TextStyle(
+                color: isSelected ? AppColors.primary : AppColors.textSecondary.withOpacity(0.7),
+                fontSize: isSelected ? 24 : 20,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+              ),
+            ),
+          );
+        }).toList(),
       ),
     );
   }

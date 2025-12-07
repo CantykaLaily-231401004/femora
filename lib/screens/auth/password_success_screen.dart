@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:femora/config/constants.dart';
-import 'package:femora/config/routes.dart';
 import 'package:femora/widgets/size_config.dart';
 import 'package:femora/widgets/primary_button.dart';
 import 'package:femora/widgets/gradient_background.dart';
@@ -117,7 +116,7 @@ class PasswordSuccessScreen extends StatelessWidget {
                         // Back to Home Button
                         PrimaryButton(
                           text: 'Kembali ke Beranda',
-                          onPressed: () => context.go(AppRoutes.home),
+                          onPressed: () => context.go('/home'),
                         ),
                       ],
                     ),
