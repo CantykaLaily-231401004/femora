@@ -10,8 +10,7 @@ import 'package:femora/widgets/primary_button.dart';
 import 'package:femora/widgets/gradient_background.dart';
 import 'package:femora/widgets/text_field_custom.dart';
 import 'package:femora/widgets/password_field.dart';
-import 'package:provider/provider.dart';
-import 'package:femora/provider/auth_provider.dart';
+
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({Key? key}) : super(key: key);
 
@@ -22,57 +21,9 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   bool _isAgreed = false;
 
-    final _nameController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-
-void _handleSignUp() async {
-  final auth = Provider.of<AuthProvider>(context, listen: false);
-
-  final name = _nameController.text.trim();
-  final email = _emailController.text.trim();
-  final password = _passwordController.text.trim();
-
-  // Validasi Input
-  if (name.isEmpty || email.isEmpty || password.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Semua field harus diisi')),
-    );
-    return;
-  }
-
-  // Proses Sign Up
-  bool ok = await auth.signUp(
-    fullName: name,
-    email: email,
-    password: password,
-  );
-
-  if (ok) {
-    if (!mounted) return;
-    context.go(AppRoutes.home); // redirect
-  } else {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(auth.errorMessage)),
-    );
-  }
-}
-
-void _handleGoogleLogin() async {
-  final auth = Provider.of<AuthProvider>(context, listen: false);
-
-  bool ok = await auth.loginWithGoogle();
-
-  if (ok) {
-    if (!mounted) return;
-    context.go(AppRoutes.home);
-  } else {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(auth.errorMessage)));
-  }
-}
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
 
   @override
   void dispose() {
@@ -226,7 +177,6 @@ void _handleGoogleLogin() async {
                                           );
                                           return;
                                         }
-                                        _handleSignUp();
                                         // "Menabung" nama ke brankas data
                                         CycleDataService().setFullName(_nameController.text);
                                         context.push('/profile-setup');
@@ -239,55 +189,6 @@ void _handleGoogleLogin() async {
 
                         SizedBox(height: SizeConfig.getHeight(3)),
 
-                        Text(
-                          'atau hubungkan dengan',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: SizeConfig.getFontSize(14),
-                          ),
-                        ),
-                        SizedBox(height: SizeConfig.getHeight(1.5)),
-
-                        Center(
-                          child: GestureDetector(
-                            onTap: _handleGoogleLogin,
-                            child: Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                border: Border.all(color: AppColors.borderColor, width: 1),
-                                borderRadius: BorderRadius.circular(15)
-                              ),
-                              child: Image.asset(AppAssets.googleIcon, width: 28, height: 28),
-                            ),
-                          ),
-                        ),
-
-                        SizedBox(height: SizeConfig.getHeight(2.5)),
-
-                        Center(
-                          child: GestureDetector(
-                            onTap: () => context.replace(AppRoutes.login),
-                            child: RichText(
-                              text: TextSpan(
-                                text: 'Sudah punya akun? ',
-                                style: TextStyle(
-                                  color: AppColors.textSecondary,
-                                  fontSize: SizeConfig.getFontSize(14),
-                                  fontFamily: AppTextStyles.fontFamily,
-                                ),
-                                children: [
-                                  TextSpan(
-                                    text: 'Masuk',
-                                    style: TextStyle(
-                                      color: AppColors.primary,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
                         AuthFooter(
                           bottomText: 'Sudah punya akun?',
                           actionText: 'Masuk',
