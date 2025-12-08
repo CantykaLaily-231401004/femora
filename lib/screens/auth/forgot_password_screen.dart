@@ -9,7 +9,7 @@ import 'package:femora/widgets/gradient_background.dart';
 import 'package:femora/widgets/text_field_custom.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
-  const ForgotPasswordScreen({Key? key}) : super(key: key);
+  const ForgotPasswordScreen({super.key});
 
   @override
   State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();

@@ -24,7 +24,7 @@ class AuthHeader extends StatelessWidget {
           title,
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontSize: SizeConfig.getFontSize(30),
+            fontSize: SizeConfig.getFontSize(36),
             fontFamily: AppTextStyles.fontFamily, // Ini adalah font Poppins
             fontWeight: FontWeight.w800, // Extra Bold
             color: titleColor ?? AppColors.textPrimary,

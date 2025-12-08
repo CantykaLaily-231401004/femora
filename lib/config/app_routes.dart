@@ -20,14 +20,9 @@ class AppRoutes {
   static const String home = '/home';
   static const String history = '/history';
   static const String profile = '/profile';
-  static const String editCycle = '/edit-cycle';
+  static const String editCycle = 'edit_cycle';
   static const String cycleHistoryDetail = '/cycle-history-detail';
   static const String cycleEdit = '/cycle-edit';
   static const String moodPicker = '/mood-picker';
   static const String edukasi = '/edukasi';
-  static const String alarm = '/alarm';
-  static const String changePassword = '/change-password'; // Rute baru
-  static const String personalData = '/personal-data';
-  static const String editPhoneNumber = '/edit-phone-number';
-  static const String help = '/help';
 }
