@@ -1,59 +1,162 @@
+import 'dart:typed_data';
+
 import 'package:femora/config/constants.dart';
-import 'package:femora/widgets/page_header.dart';
+import 'package:femora/provider/auth_provider.dart';
+import 'package:femora/services/cycle_data_service.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:femora/config/routes.dart'; 
+import 'package:femora/config/routes.dart';
+import 'package:provider/provider.dart';
 
-class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({Key? key}) : super(key: key);
+class ProfileScreen extends StatefulWidget {
+  const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Stack(
-        children: [
-          // Use the reusable PageHeader for the background and greeting
-          const PageHeader(userName: 'Ningning'),
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
 
-          // The rest of the page content, scrolling on top of the header
-          SafeArea(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Add space to push content below the greeting text in the PageHeader
-                    const SizedBox(height: 120),
+class _ProfileScreenState extends State<ProfileScreen> {
+  User? _currentUser;
 
-                    // Profile card
-                    _buildProfileCard(),
-                    const SizedBox(height: 32),
+  @override
+  void initState() {
+    super.initState();
+    _currentUser = FirebaseAuth.instance.currentUser;
+    FirebaseAuth.instance.userChanges().listen((user) {
+      if (mounted) {
+        setState(() {
+          _currentUser = user;
+        });
+      }
+    });
+  }
 
-                    // General section title
-                    const Text(
-                      'General',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-                    ),
-                    const SizedBox(height: 16),
+  ImageProvider? _getProfileImageProvider(String? photoURL) {
+    if (photoURL == null) return null;
+    if (photoURL.startsWith('data:image')) {
+      try {
+        final uri = Uri.parse(photoURL);
+        return MemoryImage(uri.data!.contentAsBytes());
+      } catch (e) {
+        return null;
+      }
+    }
+    return NetworkImage(photoURL);
+  }
 
-                    // General options card
-                    _buildGeneralSection(context),
-                    
-                    // Add space at the bottom for the nav bar
-                    const SizedBox(height: 100),
-                  ],
-                ),
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 10),
+              const Text(
+                'Keluar',
+                style: TextStyle(color: AppColors.primary, fontSize: 18, fontWeight: FontWeight.bold),
               ),
-            ),
+              const SizedBox(height: 15),
+              const Text(
+                'Yakin Ingin Keluar?',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 25),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(dialogContext).pop(),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.borderColor,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(50),
+                        ),
+                      ),
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        child: Text('Batal', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 15),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        Navigator.of(dialogContext).pop();
+                        final auth = Provider.of<AuthProvider>(context, listen: false);
+                        await auth.logout();
+                        if (context.mounted) {
+                          context.go(AppRoutes.login);
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(50),
+                        ),
+                      ),
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        child: Text('Ya, Keluar', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ),
+                ],
+              )
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildProfileCard() {
+  @override
+  Widget build(BuildContext context) {
+    final cycleDataService = Provider.of<CycleDataService>(context, listen: false);
+
+    return ValueListenableBuilder<String?>(
+      valueListenable: cycleDataService.userNameNotifier,
+      builder: (context, userName, _) {
+        final String displayName = userName ?? _currentUser?.displayName ?? 'Femora User';
+        final String displayEmail = _currentUser?.email ?? 'email@example.com';
+        final String? photoURL = _currentUser?.photoURL;
+
+        return SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 16),
+                GestureDetector(
+                  onTap: () => context.push(AppRoutes.personalData),
+                  child: _buildProfileCard(context, name: displayName, email: displayEmail, photoURL: photoURL),
+                ),
+                const SizedBox(height: 32),
+                const Text(
+                  'Pengaturan',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                ),
+                const SizedBox(height: 16),
+                _buildGeneralSection(context),
+                const SizedBox(height: 100), // Space for the nav bar
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildProfileCard(BuildContext context, {required String name, required String email, String? photoURL}) {
+    final imageProvider = _getProfileImageProvider(photoURL);
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -67,26 +170,34 @@ class ProfileScreen extends StatelessWidget {
           ),
         ],
       ),
-      child: const Row(
+      child: Row(
         children: [
           CircleAvatar(
             radius: 24,
-            backgroundImage: NetworkImage('https://i.pravatar.cc/150?u=a042581f4e29026704d'), // Placeholder
+            backgroundColor: AppColors.primary.withOpacity(0.1),
+            backgroundImage: imageProvider,
+            child: imageProvider == null
+                ? const Icon(
+                    Icons.person,
+                    size: 28,
+                    color: AppColors.primary,
+                  )
+                : null,
           ),
-          SizedBox(width: 16),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Ningning',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  name,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   overflow: TextOverflow.ellipsis,
                 ),
-                SizedBox(height: 2),
+                const SizedBox(height: 2),
                 Text(
-                  'ningning123@gmail.com',
-                  style: TextStyle(color: AppColors.grey, fontSize: 14),
+                  email,
+                  style: const TextStyle(color: AppColors.grey, fontSize: 14),
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
@@ -109,27 +220,33 @@ class ProfileScreen extends StatelessWidget {
           _buildProfileOption(
             context,
             icon: Icons.settings_outlined,
-            title: 'Pengaturan',
-            onTap: () { /* TODO: Navigate to Settings */ },
+            title: 'Ubah Kata Sandi',
+            onTap: () => context.push(AppRoutes.changePassword),
           ),
           _buildProfileOption(
             context,
             icon: Icons.notifications_none_outlined,
             title: 'Alarm Pengingat',
-            onTap: () { /* TODO: Navigate to Alarm */ },
+            onTap: () => context.push(AppRoutes.alarm),
           ),
           _buildProfileOption(
             context,
             icon: Icons.history,
             title: 'Riwayat',
-            onTap: () => context.push(AppRoutes.history), // <-- NAVIGASI RIWAYAT DIPERBARUI
+            onTap: () => context.push(AppRoutes.history),
           ),
           _buildProfileOption(
             context,
             icon: Icons.help_outline,
             title: 'Bantuan',
-            onTap: () { /* TODO: Navigate to Help */ },
-            showDivider: false, // No divider for the last item
+            onTap: () => context.push(AppRoutes.help),
+          ),
+          _buildProfileOption(
+            context,
+            icon: Icons.logout,
+            title: 'Keluar',
+            onTap: () => _showLogoutDialog(context),
+            showDivider: false,
           ),
         ],
       ),
@@ -159,7 +276,7 @@ class ProfileScreen extends StatelessWidget {
           ),
           if (showDivider)
             Padding(
-              padding: const EdgeInsets.only(left: 64.0), // Align with text
+              padding: const EdgeInsets.only(left: 64.0),
               child: Divider(height: 1, color: AppColors.borderColor.withOpacity(0.5)),
             ),
         ],

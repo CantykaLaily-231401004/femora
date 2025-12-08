@@ -9,7 +9,7 @@ import 'package:femora/widgets/gradient_background.dart';
 import 'package:femora/widgets/password_field.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
-  const ResetPasswordScreen({Key? key}) : super(key: key);
+  const ResetPasswordScreen({super.key});
 
   @override
   State<ResetPasswordScreen> createState() => _ResetPasswordScreenState();

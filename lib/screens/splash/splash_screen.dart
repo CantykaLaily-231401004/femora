@@ -1,11 +1,13 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:femora/config/constants.dart';
+import 'package:femora/config/routes.dart';
 import 'package:femora/widgets/size_config.dart';
 import 'package:femora/widgets/gradient_background.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({Key? key}) : super(key: key);
+  const SplashScreen({super.key});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -21,24 +23,33 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _startSplashSequence() async {
-    // Screen 1: Gradient only - 1.5 detik
+    // Screen 1: Gradient only
     await Future.delayed(const Duration(milliseconds: 1500));
     if (!mounted) return;
     
     setState(() => _currentScreen = 1);
 
-    // Screen 2: Logo + tagline (gradient bg) - 2 detik
+    // Screen 2: Logo + tagline (gradient bg)
     await Future.delayed(const Duration(seconds: 2));
     if (!mounted) return;
     
     setState(() => _currentScreen = 2);
 
-    // Screen 3: Logo + tagline (white bg) - 2 detik
+    // Screen 3: Logo + tagline (white bg)
     await Future.delayed(const Duration(seconds: 2));
     if (!mounted) return;
     
-    // Navigate to onboarding
-    context.replace('/onboarding');
+    // Check authentication status and navigate
+    _checkAuthAndNavigate();
+  }
+
+  void _checkAuthAndNavigate() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      context.go(AppRoutes.home);
+    } else {
+      context.go(AppRoutes.onboarding);
+    }
   }
 
   @override
@@ -49,10 +60,7 @@ class _SplashScreenState extends State<SplashScreen> {
       body: AnimatedSwitcher(
         duration: AppDurations.slow,
         transitionBuilder: (child, animation) {
-          return FadeTransition(
-            opacity: animation,
-            child: child,
-          );
+          return FadeTransition(opacity: animation, child: child);
         },
         child: _buildCurrentScreen(),
       ),
@@ -89,7 +97,7 @@ class _SplashScreenOne extends StatelessWidget {
 
 /// Splash 2: Logo + tagline dengan gradient background
 class _SplashScreenTwo extends StatelessWidget {
-  _SplashScreenTwo({Key? key}) : super(key: key);
+  const _SplashScreenTwo({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -105,15 +113,11 @@ class _SplashScreenTwo extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Logo
               Image.asset(
                 AppAssets.logoWhite,
                 width: SizeConfig.getWidth(67),
               ),
-              
               SizedBox(height: SizeConfig.getHeight(3)),
-              
-              // Tagline
               Padding(
                 padding: EdgeInsets.symmetric(
                   horizontal: SizeConfig.getWidth(10),
@@ -139,7 +143,7 @@ class _SplashScreenTwo extends StatelessWidget {
 
 /// Splash 3: Logo + tagline dengan white background
 class _SplashScreenThree extends StatelessWidget {
-  _SplashScreenThree({Key? key}) : super(key: key);
+  const _SplashScreenThree({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -152,15 +156,11 @@ class _SplashScreenThree extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Logo
               Image.asset(
                 AppAssets.logoRed,
                 width: SizeConfig.getWidth(67),
               ),
-              
               SizedBox(height: SizeConfig.getHeight(3)),
-              
-              // Tagline
               Padding(
                 padding: EdgeInsets.symmetric(
                   horizontal: SizeConfig.getWidth(10),

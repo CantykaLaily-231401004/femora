@@ -1,8 +1,10 @@
+import 'package:femora/services/cycle_data_service.dart';
 import 'package:flutter/material.dart';
 import 'package:femora/services/auth_controller.dart';
 
 class AuthProvider with ChangeNotifier {
   final AuthController _authController = AuthController();
+  final CycleDataService _cycleDataService = CycleDataService();
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
@@ -42,6 +44,9 @@ class AuthProvider with ChangeNotifier {
     _setLoading(false);
 
     if (result == "success") {
+      // Simpan nama pengguna setelah berhasil mendaftar
+      _cycleDataService.setFullName(fullName);
+      _cycleDataService.finalizeData(); // Commit nama ke notifier
       return true;
     } else {
       _setError(result);
@@ -67,6 +72,12 @@ class AuthProvider with ChangeNotifier {
     _setLoading(false);
 
     if (result == "success") {
+      // Ambil nama pengguna setelah berhasil login
+      String? userName = await _authController.getUserName();
+      if (userName != null) {
+        _cycleDataService.setFullName(userName);
+        _cycleDataService.finalizeData(); // Commit nama ke notifier
+      }
       return true;
     } else {
       _setError(result);
@@ -86,6 +97,12 @@ class AuthProvider with ChangeNotifier {
     _setLoading(false);
 
     if (result == "success") {
+      // Ambil nama pengguna setelah berhasil login dengan Google
+      String? userName = await _authController.getUserName();
+      if (userName != null) {
+        _cycleDataService.setFullName(userName);
+        _cycleDataService.finalizeData(); // Commit nama ke notifier
+      }
       return true;
     } else {
       _setError(result);

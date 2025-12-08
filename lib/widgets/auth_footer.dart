@@ -6,12 +6,14 @@ class AuthFooter extends StatelessWidget {
   final String bottomText;
   final String actionText;
   final VoidCallback onAction;
+  final VoidCallback? onSocialLogin;
 
   const AuthFooter({
     Key? key,
     required this.bottomText,
     required this.actionText,
     required this.onAction,
+    this.onSocialLogin,
   }) : super(key: key);
 
   @override
@@ -19,34 +21,31 @@ class AuthFooter extends StatelessWidget {
     SizeConfig.init(context);
     return Column(
       children: [
-        const Text(
-          'atau hubungkan dengan',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 14,
-          ),
-        ),
-        SizedBox(height: SizeConfig.getHeight(2)),
-
-        // Social Login
-        Center(
-          child: GestureDetector(
-            onTap: () {
-              // TODO: Google Sign In
-            },
-            child: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                border: Border.all(color: AppColors.borderColor, width: 1),
-                borderRadius: BorderRadius.circular(15)
-              ),
-              child: Image.asset(AppAssets.googleIcon, width: 28, height: 28),
+        if (onSocialLogin != null) ...[
+          const Text(
+            'atau hubungkan dengan',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 14,
             ),
           ),
-        ),
-
-        SizedBox(height: SizeConfig.getHeight(3)),
+          SizedBox(height: SizeConfig.getHeight(2)),
+          Center(
+            child: GestureDetector(
+              onTap: onSocialLogin,
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  border: Border.all(color: AppColors.borderColor, width: 1),
+                  borderRadius: BorderRadius.circular(15)
+                ),
+                child: Image.asset(AppAssets.googleIcon, width: 28, height: 28),
+              ),
+            ),
+          ),
+          SizedBox(height: SizeConfig.getHeight(3)),
+        ],
 
         // Bottom Text
         _FooterLink(
