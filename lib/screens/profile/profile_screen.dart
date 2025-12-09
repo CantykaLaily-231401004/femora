@@ -1,12 +1,10 @@
-import 'dart:typed_data';
-
 import 'package:femora/config/constants.dart';
+import 'package:femora/config/routes.dart';
 import 'package:femora/provider/auth_provider.dart';
 import 'package:femora/services/cycle_data_service.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:femora/config/routes.dart';
 import 'package:provider/provider.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -50,19 +48,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20.0),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               const SizedBox(height: 10),
               const Text(
                 'Keluar',
-                style: TextStyle(color: AppColors.primary, fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 15),
               const Text(
                 'Yakin Ingin Keluar?',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               const SizedBox(height: 25),
               Row(
@@ -80,7 +87,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       child: const Padding(
                         padding: EdgeInsets.symmetric(vertical: 12),
-                        child: Text('Batal', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
+                        child: Text(
+                          'Batal',
+                          style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -89,7 +103,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: ElevatedButton(
                       onPressed: () async {
                         Navigator.of(dialogContext).pop();
-                        final auth = Provider.of<AuthProvider>(context, listen: false);
+                        final auth = Provider.of<AuthProvider>(
+                          context,
+                          listen: false,
+                        );
                         await auth.logout();
                         if (context.mounted) {
                           context.go(AppRoutes.login);
@@ -104,7 +121,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       child: const Padding(
                         padding: EdgeInsets.symmetric(vertical: 12),
-                        child: Text('Ya, Keluar', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                        child: Text(
+                          'Ya, Keluar',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -119,13 +143,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final cycleDataService = Provider.of<CycleDataService>(context, listen: false);
+    final cycleDataService = Provider.of<CycleDataService>(
+      context,
+      listen: false,
+    );
 
     return ValueListenableBuilder<String?>(
       valueListenable: cycleDataService.userNameNotifier,
       builder: (context, userName, _) {
-        final String displayName = userName ?? _currentUser?.displayName ?? 'Femora User';
-        final String displayEmail = _currentUser?.email ?? 'email@example.com';
+        final String displayName = userName ?? 
+            _currentUser?.displayName ?? 
+            'Femora User';
+        final String displayEmail = _currentUser?.email ?? 
+            'email@example.com';
         final String? photoURL = _currentUser?.photoURL;
 
         return SingleChildScrollView(
@@ -137,12 +167,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 16),
                 GestureDetector(
                   onTap: () => context.push(AppRoutes.personalData),
-                  child: _buildProfileCard(context, name: displayName, email: displayEmail, photoURL: photoURL),
+                  child: _buildProfileCard(
+                    context,
+                    name: displayName,
+                    email: displayEmail,
+                    photoURL: photoURL,
+                  ),
                 ),
                 const SizedBox(height: 32),
                 const Text(
                   'Pengaturan',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 _buildGeneralSection(context),
@@ -155,7 +194,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildProfileCard(BuildContext context, {required String name, required String email, String? photoURL}) {
+  Widget _buildProfileCard(
+    BuildContext context, {
+    required String name,
+    required String email,
+    String? photoURL,
+  }) {
     final imageProvider = _getProfileImageProvider(photoURL);
     return Container(
       padding: const EdgeInsets.all(20),
@@ -191,13 +235,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 Text(
                   name,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
                 Text(
                   email,
-                  style: const TextStyle(color: AppColors.grey, fontSize: 14),
+                  style: const TextStyle(
+                    color: AppColors.grey,
+                    fontSize: 14,
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
@@ -253,7 +303,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildProfileOption(BuildContext context, {required IconData icon, required String title, required VoidCallback onTap, bool showDivider = true}) {
+  Widget _buildProfileOption(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    bool showDivider = true,
+  }) {
     return InkWell(
       onTap: onTap,
       child: Column(
@@ -267,7 +323,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Expanded(
                   child: Text(
                     title,
-                    style: const TextStyle(fontSize: 16, color: AppColors.textPrimary, fontWeight: FontWeight.w500),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
                 const Icon(Icons.chevron_right, color: AppColors.grey),
@@ -277,7 +337,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           if (showDivider)
             Padding(
               padding: const EdgeInsets.only(left: 64.0),
-              child: Divider(height: 1, color: AppColors.borderColor.withOpacity(0.5)),
+              child: Divider(
+                height: 1,
+                color: AppColors.borderColor.withOpacity(0.5),
+              ),
             ),
         ],
       ),

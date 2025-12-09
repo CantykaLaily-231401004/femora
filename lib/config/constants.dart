@@ -47,13 +47,11 @@ class AppAssets {
   // --- Ikon Riwayat BARU dari assets/icon/ ---
   // Gejala
   static const String sakitKepala = 'assets/icon/sakit_kepala.png'; 
-  static const String siklusTidakTeratur = 'assets/icon/siklus_tidak_teratur.png';
-  static const String beratBadanBertambah = 'assets/icon/berat_badan_bertambah.png'; // ✅ TAMBAHAN BARU
-  
-  // Pengobatan
-  static const String krimPelembab = 'assets/icon/krim_pelembab.png';
-  static const String obatPil = 'assets/icon/obat_pil.png';
-  static const String obatTempel = 'assets/icon/obat_tempel.png';
+  static const String moodSwing = 'assets/icon/mood_swing.png'; 
+  static const String kembung = 'assets/icon/kembung.png';
+  static const String nyeriPunggung = 'assets/icon/nyeri_punggung.png'; 
+  static const String kelelahan = 'assets/icon/kelelahan.png';   
+  static const String nyeriPerut = 'assets/icon/nyeri_perut.png';     
   
   // Aliran (Asumsi di assets/images)
   static const String flowLow = 'assets/images/flow_low.png'; 
