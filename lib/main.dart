@@ -1,9 +1,9 @@
 import 'package:femora/config/routes.dart';
 import 'package:femora/config/theme.dart';
 import 'package:femora/provider/auth_provider.dart';
-// import 'package:femora/provider/history_provider.dart'; // Import ini sudah dinonaktifkan
 import 'package:femora/services/cycle_data_service.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider; 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -15,11 +15,27 @@ import 'firebase_options.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize services before running the app
+  // Initialize formatting
   await initializeDateFormatting('id_ID', null);
 
-  // Load data from shared preferences
-  await CycleDataService().loadDataFromPrefs();
+  // Initialize Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  // Buat instance service
+  final cycleDataService = CycleDataService();
+
+  // Setup Listener Auth State
+  FirebaseAuth.instance.authStateChanges().listen((User? user) {
+    if (user == null) {
+      debugPrint("User Logout: Clearing Data...");
+      cycleDataService.clearAllData(); 
+    } else {
+      debugPrint("User Login: Loading Data for ${user.uid}...");
+      cycleDataService.loadUserData(); 
+    }
+  });
 
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
@@ -35,15 +51,13 @@ void main() async {
     ),
   );
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-
-  runApp(const MyApp());
+  runApp(MyApp(cycleDataService: cycleDataService));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final CycleDataService cycleDataService;
+
+  const MyApp({super.key, required this.cycleDataService});
 
   @override
   Widget build(BuildContext context) {
@@ -52,15 +66,12 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider<AuthProvider>(
           create: (_) => AuthProvider(),
         ),
-        // ChangeNotifierProvider<HistoryProvider> telah dihapus.
-        Provider<CycleDataService>(
-          create: (_) => CycleDataService(),
+        Provider<CycleDataService>.value(
+          value: cycleDataService,
         ),
       ],
       child: MaterialApp.router(
-        // Perhatikan: Line di bawah ini mungkin perlu diubah menjadi 'routerConfig: router,'
-        // tergantung bagaimana 'router' didefinisikan di lib/config/routes.dart.
-        routerConfig: AppRouter.createRouter(), 
+        routerConfig: AppRouter.createRouter(),
         debugShowCheckedModeBanner: false,
         title: 'Femora',
         theme: AppTheme.lightTheme,

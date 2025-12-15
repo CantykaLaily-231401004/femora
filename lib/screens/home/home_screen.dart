@@ -1,3 +1,4 @@
+import 'package:femora/config/routes.dart'; 
 import 'package:femora/logic/cycle_phase_logic.dart';
 import 'package:femora/logic/prediction_logic.dart';
 import 'package:femora/models/cycle_data.dart';
@@ -27,8 +28,17 @@ class _HomeScreenState extends State<HomeScreen> {
     final now = DateTime.now();
     _focusedDay = now;
     _selectedDay = now;
+
     _cycleDataService.dailyMoodNotifier.addListener(_onDataChanged);
     _cycleDataService.cycleDataNotifier.addListener(_onDataChanged);
+
+    // Load data fresh dari server saat masuk
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _cycleDataService.loadUserData();
+      if (mounted) {
+        await _cycleDataService.loadMoodsForMonth(now);
+      }
+    });
   }
 
   @override
@@ -39,38 +49,61 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _onDataChanged() {
-    if (mounted) {
-      setState(() {});
-    }
+    if (mounted) setState(() {});
+  }
+
+  String? _getMoodEmoji(DateTime date) {
+    final moodText = _cycleDataService.getMoodForDay(date);
+    if (moodText == 'Baik') return '😊';
+    if (moodText == 'Buruk') return '😞';
+    return null; 
   }
 
   void _onDaySelected(DateTime selectedDay, DateTime focusedDay) {
-    final today = DateTime.now();
-    final normalizedToday = DateTime(today.year, today.month, today.day);
-
-    if (_cycleDataService.getMoodForDay(normalizedToday) != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Daily check-in sudah dilakukan hari ini.')),
-      );
-      return;
-    }
-
     setState(() {
+      _selectedDay = selectedDay;
       _focusedDay = focusedDay;
     });
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      isDismissible: false,
-      enableDrag: false,
-      backgroundColor: Colors.transparent,
-      builder: (context) => const MenstruationQuestionPopup(),
-    );
+    final isToday = DateTime.now().difference(selectedDay).inDays == 0 && 
+                    DateTime.now().day == selectedDay.day;
+
+    if (isToday) {
+      // LOGIC FIX: Cek database local dulu
+      final existingMood = _cycleDataService.getMoodForDay(selectedDay);
+      
+      if (existingMood != null) {
+        // JIKA SUDAH ADA DATA, TAMPILKAN SNACKBAR & JANGAN BUKA POPUP
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Kamu sudah melakukan check-in hari ini! 😊'),
+            backgroundColor: Color(0xFFF75270),
+          ),
+        );
+        return; // STOP DI SINI
+      }
+
+      // Jika belum ada data, baru buka popup
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        isDismissible: false,
+        enableDrag: false,
+        useRootNavigator: true, 
+        backgroundColor: Colors.transparent,
+        builder: (context) => const MenstruationQuestionPopup(),
+      ).then((_) {
+        // Refresh data setelah popup ditutup
+        _cycleDataService.loadMoodsForMonth(_focusedDay);
+      });
+    } else {
+      // Jika klik tanggal lain (bukan hari ini), buka edit screen history
+      context.push(AppRoutes.cycleEdit, extra: selectedDay);
+    }
   }
 
   void _onEditCycle() {
-    context.go('/profile/edit_cycle');
+    context.push(AppRoutes.cycleEdit, extra: DateTime.now());
   }
 
   @override
@@ -109,11 +142,11 @@ class _HomeScreenState extends State<HomeScreen> {
               onDaySelected: _onDaySelected,
               onEditCycle: _onEditCycle,
               prediction: prediction,
-              getMoodForDay: _cycleDataService.getMoodForDay,
+              getMoodForDay: _getMoodEmoji, 
             ),
             const SizedBox(height: 15),
             CyclePhaseCard(data: currentPhase),
-            const SizedBox(height: 120), // Space for the nav bar
+            const SizedBox(height: 120), 
           ],
         ),
       ),

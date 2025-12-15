@@ -1,7 +1,9 @@
+import 'package:femora/models/daily_log_model.dart';
 import 'package:femora/services/cycle_data_service.dart';
 import 'package:femora/widgets/recommendation_popup.dart';
 import 'package:femora/widgets/symptoms_popup.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class MoodCheckinPopup extends StatelessWidget {
   final bool isMenstruating;
@@ -11,15 +13,14 @@ class MoodCheckinPopup extends StatelessWidget {
     required this.isMenstruating,
   }) : super(key: key);
 
-  void _handleMoodSelection(BuildContext context, bool isHappy) {
+  void _handleMoodSelection(BuildContext context, bool isHappy) async {
     final cycleDataService = CycleDataService();
-    final emoticon = isHappy ? '😊' : '😢';
-    cycleDataService.setMoodForDay(DateTime.now(), emoticon);
+    final String mood = isHappy ? 'Baik' : 'Buruk';
+    
+    Navigator.of(context).pop(); // Tutup popup mood
 
-    Navigator.of(context).pop(); // Close current non-dismissible popup
-
+    // Skenario 1: Menstruasi & Sedih -> Lanjut tanya Gejala
     if (isMenstruating && !isHappy) {
-      // This is an intermediate step, so it must not be dismissible
       showModalBottomSheet(
         context: context,
         isScrollControlled: true,
@@ -27,13 +28,36 @@ class MoodCheckinPopup extends StatelessWidget {
         enableDrag: false,
         backgroundColor: Colors.transparent,
         builder: (BuildContext context) {
-          return const SymptomsPopup();
+          // Oper data mood ke popup gejala biar sekalian disimpan nanti
+          return SymptomsPopup(
+            initialMood: mood,
+            isMenstruating: isMenstruating,
+          );
         },
       );
       return;
     }
 
-    // This is a final recommendation, so it can be dismissed
+    // Skenario 2: Happy atau Tidak Menstruasi -> Simpan Langsung
+    final userId = cycleDataService.userId;
+    if (userId != null) {
+      final now = DateTime.now();
+      final dateId = DateFormat('yyyyMMdd').format(now);
+      final id = '${userId}_$dateId';
+
+      final log = DailyLogModel(
+        id: id,
+        userId: userId,
+        date: now,
+        mood: mood,
+        symptoms: [], // Kosong karena tidak isi gejala
+        isMenstruation: isMenstruating,
+      );
+
+      await cycleDataService.saveDailyLog(log);
+    }
+
+    // Tampilkan Rekomendasi
     String header;
     String message;
     String? imageName;
@@ -41,7 +65,7 @@ class MoodCheckinPopup extends StatelessWidget {
     if (isMenstruating) {
       header = 'Horeee!';
       message = 'Lagi menstruasi tapi tetap ceria! ✨\nJangan lupa minum air hangat ya! 💧';
-      imageName = 'fase_menstruasi.png';
+      imageName = 'fase_menstruasi.png'; // Pastikan nama file aset sesuai
     } else {
       if (isHappy) {
         header = 'Keren!';
@@ -54,24 +78,25 @@ class MoodCheckinPopup extends StatelessWidget {
       }
     }
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      isDismissible: true, // Final popup is dismissible
-      backgroundColor: Colors.transparent,
-      builder: (BuildContext context) {
-        return RecommendationPopup(
-          header: header,
-          message: message,
-          imageName: imageName,
-        );
-      },
-    );
+    if (context.mounted) {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        isDismissible: true,
+        backgroundColor: Colors.transparent,
+        builder: (BuildContext context) {
+          return RecommendationPopup(
+            header: header,
+            message: message,
+            imageName: imageName,
+          );
+        },
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Prevent dismissing with back button
     return WillPopScope(
       onWillPop: () async => false,
       child: Container(

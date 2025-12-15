@@ -35,7 +35,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-/// Route path constants - Single source of truth untuk semua routes
+/// Route path constants
 class AppRoutes {
   // Auth Routes
   static const String splash = '/';
@@ -55,7 +55,7 @@ class AppRoutes {
   static const String lastPeriod = '/last-period';
   static const String setupLoading = '/setup-loading';
 
-  // Main App Routes (with BottomNav)
+  // Main App Routes
   static const String home = '/home';
   static const String edukasi = '/edukasi';
   static const String profile = '/profile';
@@ -63,11 +63,13 @@ class AppRoutes {
   // History Routes
   static const String history = '/history';
   static const String cycleHistoryDetail = '/cycle-history-detail';
-  static const String cycleEdit = '/cycle-edit';
+  
+  // Note: Pastikan di Home Screen kamu menggunakan '/cycle-edit' bukan '/profile/edit_cycle'
+  static const String cycleEdit = '/cycle-edit'; 
   static const String moodPicker = '/mood-picker';
   
   // Profile Settings Routes
-  static const String editCycle = '/edit-cycle';
+  static const String editCycle = '/edit-cycle'; // Ini sepertinya screen lama?
   static const String alarm = '/alarm';
   static const String changePassword = '/change-password';
   static const String personalData = '/personal-data';
@@ -75,14 +77,14 @@ class AppRoutes {
   static const String help = '/help';
 }
 
-/// Router configuration - GoRouter setup
+/// Router configuration
 class AppRouter {
   static GoRouter createRouter() {
     return GoRouter(
       initialLocation: AppRoutes.splash,
       routes: [
         // ============================================
-        // AUTH & ONBOARDING ROUTES (No NavBar)
+        // AUTH & ONBOARDING ROUTES
         // ============================================
         GoRoute(
           path: AppRoutes.splash,
@@ -121,7 +123,7 @@ class AppRouter {
         ),
 
         // ============================================
-        // SETUP ROUTES (No NavBar)
+        // SETUP ROUTES
         // ============================================
         GoRoute(
           path: AppRoutes.profileSetup,
@@ -152,7 +154,7 @@ class AppRouter {
         ),
 
         // ============================================
-        // HISTORY & CYCLE ROUTES (No NavBar)
+        // HISTORY & CYCLE ROUTES
         // ============================================
         GoRoute(
           path: AppRoutes.history,
@@ -164,27 +166,36 @@ class AppRouter {
           name: 'cycle-history-detail',
           builder: (context, state) => const CycleHistoryDetailScreen(),
         ),
+        
+        // --- BAGIAN YANG DIPERBAIKI ---
         GoRoute(
-          path: AppRoutes.cycleEdit,
+          path: AppRoutes.cycleEdit, // '/cycle-edit'
           name: 'cycle-edit',
-          builder: (context, state) => CycleEditScreen(
-            initialDate: state.extra as DateTime,
-          ),
+          builder: (context, state) {
+            // Kita kirim parameter extra langsung ke CycleEditScreen
+            // extra bisa berupa DateTime atau null
+            return CycleEditScreen(
+              extra: state.extra, 
+            );
+          },
         ),
         GoRoute(
           path: AppRoutes.moodPicker,
           name: 'mood-picker',
           builder: (context, state) => MoodPickerScreen(
-            initialMood: state.extra as String,
+            // Tambahkan default value biar ga crash kalau null
+            initialMood: state.extra as String? ?? 'Baik',
           ),
         ),
+        // -----------------------------
+
         GoRoute(
           path: AppRoutes.editCycle,
           builder: (context, state) => const EditCycleScreen(),
         ),
 
         // ============================================
-        // PROFILE SETTINGS ROUTES (No NavBar)
+        // PROFILE SETTINGS ROUTES
         // ============================================
         GoRoute(
           path: AppRoutes.alarm,
@@ -237,7 +248,7 @@ class AppRouter {
 }
 
 // ============================================
-// SHARED UI WRAPPER (Background + Header + NavBar)
+// SHARED UI WRAPPER
 // ============================================
 class ScaffoldWithSharedUI extends StatelessWidget {
   const ScaffoldWithSharedUI({required this.child, super.key});
@@ -266,6 +277,8 @@ class ScaffoldWithSharedUI extends StatelessWidget {
     }
 
     final currentIndex = getCurrentIndex();
+    
+    // Pastikan CycleDataService tersedia di sini (dari Provider di main.dart)
     final cycleDataService = Provider.of<CycleDataService>(context);
 
     return Scaffold(

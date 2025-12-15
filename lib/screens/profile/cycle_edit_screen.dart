@@ -1,256 +1,301 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:femora/models/daily_log_model.dart';
+import 'package:femora/services/cycle_data_service.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // Butuh untuk cek creationTime
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:femora/config/constants.dart';
-import 'package:femora/config/routes.dart';
 import 'package:femora/widgets/custom_back_button.dart';
 import 'package:femora/widgets/primary_button.dart';
 import 'package:femora/widgets/size_config.dart';
+import 'package:intl/intl.dart';
 
-// --- Data Models ---
+// --- Data Models UI ---
 class DailyCycleData {
-  int flowIndex;
-  Set<int> symptomIndices;
+  Set<String> symptoms; 
   String selectedMood;
-  String notes;
+  bool isModified; 
 
   DailyCycleData({
-    required this.flowIndex,
-    required this.symptomIndices,
+    required this.symptoms,
     required this.selectedMood,
-    required this.notes,
+    this.isModified = false,
   });
 
   factory DailyCycleData.initial() => DailyCycleData(
-        flowIndex: 0,
-        symptomIndices: {},
+        symptoms: {},
         selectedMood: 'Baik',
-        notes: '',
       );
 }
 
-// Data sesuai History Screen
-final List<String> flowOptions = ['Ringan', 'Normal', 'Banyak'];
-
-final List<String> symptomLabels = [
-  'Mood Swing',
-  'Kembung',
-  'Nyeri Punggung',
-  'Kelelahan',
-  'Nyeri Perut',
-];
-
-final List<Map<String, dynamic>> moodOptions = [
-  {'label': 'Baik', 'emoji': '😊'},
-  {'label': 'Buruk', 'emoji': '😞'},
+// Data Options Gejala
+final List<Map<String, String>> symptomOptions = [
+  {'label': 'Mood Swing', 'path': AppAssets.moodSwing},
+  {'label': 'Kembung', 'path': AppAssets.kembung},
+  {'label': 'Nyeri Punggung', 'path': AppAssets.nyeriPunggung},
+  {'label': 'Kelelahan', 'path': AppAssets.kelelahan},
+  {'label': 'Nyeri perut/kram', 'path': AppAssets.nyeriPerut}, 
+  {'label': 'Sakit kepala/pusing', 'path': AppAssets.sakitKepala}, 
 ];
 
 class CycleEditScreen extends StatefulWidget {
-  final DateTime initialDate;
-  const CycleEditScreen({Key? key, required this.initialDate}) : super(key: key);
+  final Object? extra; 
+  
+  const CycleEditScreen({Key? key, this.extra}) : super(key: key);
 
   @override
   State<CycleEditScreen> createState() => _CycleEditScreenState();
 }
 
 class _CycleEditScreenState extends State<CycleEditScreen> {
-  late Map<DateTime, DailyCycleData> _dailyDataMap;
   late DateTime _selectedDate;
-  late List<DateTime> _dates;
-  final TextEditingController _notesController = TextEditingController();
+  late DailyCycleData _currentData;
+  final CycleDataService _cycleDataService = CycleDataService();
+  bool _isLoading = false;
+  
+  // Tanggal user daftar
+  late DateTime _registrationDate;
 
   @override
   void initState() {
     super.initState();
-
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
     
-    // Generate 7 hari terakhir
-    _dates = List.generate(7, (index) => DateTime(
-      today.year,
-      today.month, 
-      today.day - (6 - index),
-    ));
-
-    _dailyDataMap = {};
-    for (var date in _dates) {
-      _dailyDataMap[date] = DailyCycleData.initial();
+    // Set tanggal awal dari parameter
+    if (widget.extra is DateTime) {
+      _selectedDate = widget.extra as DateTime;
+    } else {
+      _selectedDate = DateTime.now();
     }
 
-    _selectedDate = _dates.last; // Default ke hari ini
-    _notesController.text = _currentData.notes;
-  }
-
-  @override
-  void dispose() {
-    _notesController.dispose();
-    super.dispose();
-  }
-
-  DailyCycleData get _currentData => _dailyDataMap[_selectedDate]!;
-
-  // Cek apakah tanggal bisa diedit
-  bool _canEditDate(DateTime date) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final checkDate = DateTime(date.year, date.month, date.day);
+    // Ambil tanggal registrasi dari Firebase Auth
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null && user.metadata.creationTime != null) {
+      _registrationDate = user.metadata.creationTime!;
+    } else {
+      // Fallback jika tidak ada data (misal 1 tahun lalu)
+      _registrationDate = DateTime.now().subtract(const Duration(days: 365));
+    }
     
-    // TODO: Ganti dengan firstLoginDate dari Firebase
-    final firstLoginDate = DateTime(2024, 12, 3);
-    
-    // Bisa edit jika: tanggal >= firstLogin DAN tanggal <= hari ini
-    return checkDate.isAfter(firstLoginDate.subtract(const Duration(days: 1))) && 
-           checkDate.isBefore(today.add(const Duration(days: 1)));
+    _currentData = DailyCycleData.initial();
+    _loadDataFromFirebase();
   }
 
-  void _showNoDataDialog() {
+  Future<void> _loadDataFromFirebase() async {
+    setState(() => _isLoading = true);
+    final userId = _cycleDataService.userId;
+    if (userId == null) return;
+
+    try {
+      final start = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
+      final end = start.add(const Duration(days: 1));
+
+      final snapshot = await FirebaseFirestore.instance
+          .collection('daily_logs')
+          .where('userId', isEqualTo: userId)
+          .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(start))
+          .where('date', isLessThan: Timestamp.fromDate(end))
+          .get();
+
+      if (snapshot.docs.isNotEmpty) {
+        final log = DailyLogModel.fromFirestore(snapshot.docs.first);
+        setState(() {
+          _currentData = DailyCycleData(
+            symptoms: log.symptoms.toSet(),
+            selectedMood: log.mood,
+          );
+        });
+      } else {
+        // Reset jika tidak ada data di tanggal itu
+        setState(() {
+          _currentData = DailyCycleData.initial();
+        });
+      }
+    } catch (e) {
+      debugPrint("Error loading logs: $e");
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _saveChanges() async {
+    final userId = _cycleDataService.userId;
+    if (userId == null) return;
+
     showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          'Tidak Ada Data',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
+      context: context, 
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator())
+    );
+
+    try {
+      final dateId = DateFormat('yyyyMMdd').format(_selectedDate);
+      final id = '${userId}_$dateId';
+
+      final log = DailyLogModel(
+        id: id,
+        userId: userId,
+        date: _selectedDate,
+        mood: _currentData.selectedMood,
+        symptoms: _currentData.symptoms.toList(),
+        isMenstruation: false, 
+      );
+
+      await _cycleDataService.saveDailyLog(log);
+      
+      if (mounted) {
+        Navigator.pop(context); // Tutup loading
+        context.pop(); // Kembali
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal: $e')));
+      }
+    }
+  }
+
+  // --- WIDGETS ---
+
+  // 1. Date Strip (7 Hari)
+  Widget _buildDateStrip() {
+    final today = DateTime.now();
+    // Generate 7 hari (Hari ini + 6 hari ke belakang)
+    List<DateTime> dates = List.generate(7, (index) {
+      return today.subtract(Duration(days: 6 - index));
+    });
+
+    return Row(
+      children: [
+        // Tombol Kalender (Untuk pilih tanggal lama)
+        IconButton(
+          onPressed: () async {
+            final picked = await showDatePicker(
+              context: context,
+              initialDate: _selectedDate,
+              firstDate: DateTime(2020),
+              lastDate: DateTime.now(),
+            );
+            if (picked != null) {
+              _handleDateChange(picked);
+            }
+          },
+          icon: const Icon(Icons.calendar_today_rounded, color: AppColors.primary),
         ),
-        content: const Text(
-          'Tidak ada data pada tanggal ini. Anda hanya bisa mengedit tanggal sejak pertama kali login hingga hari ini.',
-          style: TextStyle(color: Colors.black87),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'OK',
-              style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+        const SizedBox(width: 8),
+        // List 7 Hari
+        Expanded(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: dates.map((date) {
+                final isSelected = date.year == _selectedDate.year && 
+                                   date.month == _selectedDate.month && 
+                                   date.day == _selectedDate.day;
+                
+                return GestureDetector(
+                  onTap: () => _handleDateChange(date),
+                  child: Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isSelected ? AppColors.primary : Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isSelected ? AppColors.primary : Colors.grey.shade200
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          DateFormat('E', 'id_ID').format(date), // Nama Hari (Sen, Sel)
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isSelected ? Colors.white : Colors.grey,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          DateFormat('dd').format(date), // Tanggal (05, 06)
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: isSelected ? Colors.white : Colors.black,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  void _navigateToMoodPicker() async {
-    final result = await context.push<String>(
-      AppRoutes.moodPicker,
-      extra: _currentData.selectedMood,
-    );
-    if (result != null) {
-      setState(() {
-        _currentData.selectedMood = result;
-      });
+  void _handleDateChange(DateTime newDate) {
+    // Validasi: Cek apakah tanggal sebelum user register
+    if (newDate.isBefore(_registrationDate.subtract(const Duration(days: 1)))) {
+      // Tampilkan Popup jika belum ada data (sebelum register)
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Belum Ada Data'),
+          content: const Text('Kamu belum bergabung dengan Femora pada tanggal ini.'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK'))
+          ],
+        ),
+      );
+      return;
     }
-  }
 
-  void _saveChanges() {
-    print('--- SAVING ALL DATA ---');
-    _dailyDataMap.forEach((date, data) {
-      print('Date: $date');
-      print('Flow: ${flowOptions[data.flowIndex]}');
-      print('Symptoms: ${data.symptomIndices.map((i) => symptomLabels[i]).toList()}');
-      print('Mood: ${data.selectedMood}');
-      print('Notes: ${data.notes}');
-      print('---');
+    setState(() {
+      _selectedDate = newDate;
     });
-    
-    // TODO: Simpan ke Firebase
-    context.go(AppRoutes.history);
+    _loadDataFromFirebase();
   }
 
-  Widget _buildDateSelector() {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      reverse: true,
-      child: Row(
-        children: _dates.map((date) {
-          final isSelected = date.day == _selectedDate.day && date.month == _selectedDate.month;
-          final canEdit = _canEditDate(date);
-
-          return GestureDetector(
-            onTap: () {
-              if (!canEdit) {
-                _showNoDataDialog();
-              } else {
-                setState(() {
-                  _selectedDate = _dates.firstWhere(
-                      (d) => d.day == date.day && d.month == date.month);
-                  _notesController.text = _currentData.notes;
-                });
-              }
-            },
-            child: Container(
-              width: 60,
-              margin: const EdgeInsets.only(right: 8),
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              decoration: BoxDecoration(
-                color: isSelected 
-                    ? AppColors.primary 
-                    : (canEdit ? AppColors.white : AppColors.grey.withOpacity(0.3)),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: isSelected ? AppColors.primary : AppColors.grey.withOpacity(0.3),
-                  width: 1.5,
-                ),
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    ['Mg', 'Sn', 'Sl', 'Rb', 'Km', 'Jm', 'Sb'][date.weekday % 7],
-                    style: TextStyle(
-                      color: isSelected ? Colors.white : (canEdit ? Colors.black : AppColors.grey),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: AppTextStyles.fontFamily,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${date.day}',
-                    style: TextStyle(
-                      color: isSelected ? Colors.white : (canEdit ? Colors.black : AppColors.grey),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      fontFamily: AppTextStyles.fontFamily,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }).toList(),
-      ),
+  // 2. Mood Toggle (Seperti Gambar 2)
+  Widget _buildMoodToggle() {
+    return Row(
+      children: [
+        _buildMoodPill('Baik', '😊', const Color(0xFFE040FB)), // Ungu/Pink seperti gambar
+        const SizedBox(width: 16),
+        _buildMoodPill('Buruk', '😠', const Color(0xFFFF5722)), // Orange/Merah
+      ],
     );
   }
 
-  Widget _buildMoodPill({
-    required String label,
-    required String emoji,
-    required bool isSelected,
-  }) {
+  Widget _buildMoodPill(String label, String emoji, Color activeColor) {
+    final isSelected = _currentData.selectedMood == label;
+    
     return Expanded(
       child: GestureDetector(
-        onTap: _navigateToMoodPicker,
+        onTap: () {
+          setState(() {
+            _currentData.selectedMood = label;
+          });
+        },
         child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 6),
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: isSelected ? AppColors.primary : AppColors.white,
+            color: isSelected ? AppColors.primary : Colors.white,
             borderRadius: BorderRadius.circular(30),
-            border: Border.all(
-              color: isSelected ? AppColors.primary : AppColors.grey.withOpacity(0.3),
-              width: 1.5,
-            ),
+            border: Border.all(color: Colors.grey.shade200),
+            boxShadow: isSelected ? [
+              BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))
+            ] : [],
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              // Lingkaran Emoji
               Container(
-                width: 32,
-                height: 32,
+                width: 32, height: 32,
                 decoration: BoxDecoration(
-                  color: isSelected 
-                      ? Colors.white.withOpacity(0.3) 
-                      : AppColors.primaryLight,
+                  color: isSelected ? activeColor : Colors.grey.shade100,
                   shape: BoxShape.circle,
                 ),
                 child: Center(
@@ -263,8 +308,7 @@ class _CycleEditScreenState extends State<CycleEditScreen> {
                 style: TextStyle(
                   color: isSelected ? Colors.white : Colors.black,
                   fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                  fontFamily: AppTextStyles.fontFamily,
+                  fontSize: 16,
                 ),
               ),
             ],
@@ -277,303 +321,115 @@ class _CycleEditScreenState extends State<CycleEditScreen> {
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontWeight: FontWeight.w700,
-          fontSize: 18,
-          color: Colors.black,
-          fontFamily: AppTextStyles.fontFamily,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSelectableItem({
-    required Widget iconWidget,
-    required String label,
-    required bool isSelected,
-    required VoidCallback onTap,
-    bool isAssetIcon = false,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 85,
-        margin: const EdgeInsets.only(right: 12),
-        child: Column(
-          children: [
-            Container(
-              width: 58,
-              height: 58,
-              decoration: BoxDecoration(
-                color: isSelected ? AppColors.primary : AppColors.white,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isSelected ? AppColors.primary : AppColors.grey.withOpacity(0.3),
-                  width: 2,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Center(
-                child: isAssetIcon
-                    ? Padding(
-                        padding: const EdgeInsets.all(12.0),
-                        child: iconWidget,
-                      )
-                    : ColorFiltered(
-                        colorFilter: ColorFilter.mode(
-                          isSelected ? Colors.white : AppColors.primary,
-                          BlendMode.srcIn,
-                        ),
-                        child: iconWidget,
-                      ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.black,
-                fontWeight: FontWeight.w600,
-                fontSize: 12,
-                fontFamily: AppTextStyles.fontFamily,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-      ),
+      child: Text(title, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18, fontFamily: AppTextStyles.fontFamily)),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     SizeConfig.init(context);
-
+    
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 245, 224, 224),
+      backgroundColor: const Color(0xFFFAFAFA), // Background agak putih abu
       body: SafeArea(
         child: Column(
           children: [
             // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-              child: Row(
-                children: [
+              child: Row(children: [
                   CustomBackButton(onPressed: () => context.pop()),
                   Expanded(
                     child: Center(
                       child: Text(
-                        'Log Entry',
-                        style: TextStyle(
-                          fontFamily: AppTextStyles.fontFamily,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 24,
-                          color: Colors.black,
-                        ),
-                      ),
-                    ),
+                        'Edit Siklus',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)
+                      )
+                    )
                   ),
                   const SizedBox(width: 50),
-                ],
-              ),
+              ]),
             ),
 
             Expanded(
-              child: SingleChildScrollView(
+              child: _isLoading 
+              ? const Center(child: CircularProgressIndicator())
+              : SingleChildScrollView(
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Date Selector
-                    _buildDateSelector(),
-                    const SizedBox(height: 24),
+                    // DATE STRIP (Gambar 3)
+                    _buildDateStrip(),
+                    const SizedBox(height: 30),
 
-                    // Tingkat Menstruasi - RATA KIRI KANAN
-                    _buildSectionTitle('Tingkat Menstruasi'),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                    // MOOD TOGGLE (Gambar 2)
+                    _buildSectionTitle('Suasana Hati'),
+                    _buildMoodToggle(),
+                    const SizedBox(height: 30),
+
+                    // GEJALA (Horizontal Scroll)
+                    _buildSectionTitle('Gejala'),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: flowOptions.asMap().entries.map((entry) {
-                          final index = entry.key;
-                          final flow = entry.value;
-                          final isSelected = _currentData.flowIndex == index;
-                          
-                          Color iconColor = AppColors.primary;
-                          if (index == 1) iconColor = AppColors.primary.withOpacity(0.7);
-                          
-                          return Expanded(
-                            child: Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 6),
-                              child: GestureDetector(
-                                onTap: () => setState(() => _currentData.flowIndex = index),
-                                child: Column(
-                                  children: [
-                                    Container(
-                                      width: 58,
-                                      height: 58,
-                                      decoration: BoxDecoration(
-                                        color: isSelected ? AppColors.primary : AppColors.white,
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: isSelected ? AppColors.primary : AppColors.grey.withOpacity(0.3),
-                                          width: 2,
-                                        ),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withOpacity(0.05),
-                                            blurRadius: 8,
-                                            offset: const Offset(0, 2),
-                                          ),
-                                        ],
-                                      ),
-                                      child: Center(
-                                        child: ColorFiltered(
-                                          colorFilter: ColorFilter.mode(
-                                            isSelected ? Colors.white : iconColor,
-                                            BlendMode.srcIn,
-                                          ),
-                                          child: const Icon(Icons.water_drop, size: 28),
-                                        ),
-                                      ),
+                        children: symptomOptions.map((symptom) {
+                          final isSelected = _currentData.symptoms.contains(symptom['label']);
+                          return GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                if (isSelected) {
+                                  _currentData.symptoms.remove(symptom['label']);
+                                } else {
+                                  _currentData.symptoms.add(symptom['label']!);
+                                }
+                              });
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.only(right: 20),
+                              child: Column(
+                                children: [
+                                  Container(
+                                    width: 60,
+                                    height: 60,
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: isSelected ? AppColors.primary : Colors.white,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: isSelected ? AppColors.primary : Colors.grey.shade300, width: 2),
                                     ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      flow,
+                                    child: Image.asset(
+                                      symptom['path']!,
+                                      color: isSelected ? Colors.white : null,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  SizedBox(
+                                    width: 70,
+                                    child: Text(
+                                      symptom['label']!,
                                       textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        color: Colors.black,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 12,
-                                        fontFamily: AppTextStyles.fontFamily,
-                                      ),
+                                      style: TextStyle(fontSize: 11, color: isSelected ? AppColors.primary : Colors.black),
                                     ),
-                                  ],
-                                ),
+                                  )
+                                ],
                               ),
                             ),
                           );
                         }).toList(),
                       ),
                     ),
-                    const SizedBox(height: 24),
-
-                    // Gejala
-                    _buildSectionTitle('Gejala'),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: symptomLabels.asMap().entries.map((entry) {
-                          final index = entry.key;
-                          final symptom = entry.value;
-
-                          String assetPath;
-                          switch (symptom) {
-                            case 'Mood Swing':
-                              assetPath = AppAssets.moodSwing;
-                              break;
-                            case 'Kembung':
-                              assetPath = AppAssets.kembung;
-                              break;
-                            case 'Nyeri Punggung':
-                              assetPath = AppAssets.nyeriPunggung;
-                              break;
-                            case 'Kelelahan':
-                              assetPath = AppAssets.kelelahan;
-                              break;
-                            case 'Nyeri Perut':
-                              assetPath = AppAssets.nyeriPerut;
-                              break;
-                            default:
-                              assetPath = AppAssets.sakitKepala;
-                          }
-
-                          return _buildSelectableItem(
-                            iconWidget: Image.asset(assetPath, fit: BoxFit.contain),
-                            label: symptom,
-                            isSelected: _currentData.symptomIndices.contains(index),
-                            isAssetIcon: true,
-                            onTap: () {
-                              setState(() {
-                                if (_currentData.symptomIndices.contains(index)) {
-                                  _currentData.symptomIndices.remove(index);
-                                } else {
-                                  _currentData.symptomIndices.add(index);
-                                }
-                              });
-                            },
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Suasana Hati
-                    _buildSectionTitle('Suasana Hati'),
-                    Row(
-                      children: moodOptions.map((mood) {
-                        final isSelected = _currentData.selectedMood == mood['label'];
-                        return _buildMoodPill(
-                          label: mood['label'],
-                          emoji: mood['emoji'],
-                          isSelected: isSelected,
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Catatan
-                    _buildSectionTitle('Catatan'),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppColors.white,
-                        borderRadius: BorderRadius.circular(15),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: TextField(
-                        controller: _notesController,
-                        onChanged: (text) => _currentData.notes = text,
-                        maxLines: 5,
-                        decoration: const InputDecoration(
-                          hintText: 'Tambahkan Catatan Anda Di sini...',
-                          hintStyle: TextStyle(color: AppColors.grey, fontSize: 14),
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.zero,
-                        ),
-                        style: const TextStyle(color: Colors.black, fontSize: 14),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
                   ],
                 ),
               ),
             ),
-
-            // Tombol Simpan
-            Padding(
-              padding: const EdgeInsets.only(bottom: 20.0, left: 20, right: 20),
-              child: PrimaryButton(
-                text: 'Simpan',
-                onPressed: _saveChanges,
-              ),
-            ),
+            
+            // Simpan Button
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: const BoxDecoration(color: Colors.white),
+              child: PrimaryButton(text: 'Simpan', onPressed: _saveChanges),
+            )
           ],
         ),
       ),
