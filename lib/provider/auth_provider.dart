@@ -2,7 +2,8 @@ import 'package:femora/services/cycle_data_service.dart';
 import 'package:flutter/material.dart';
 import 'package:femora/services/auth_controller.dart';
 
-class AuthProvider with ChangeNotifier {
+// 👇 Perhatikan "extends ChangeNotifier", ini kuncinya biar main.dart ga error
+class AuthProvider extends ChangeNotifier { 
   final AuthController _authController = AuthController();
   final CycleDataService _cycleDataService = CycleDataService();
 
@@ -12,21 +13,17 @@ class AuthProvider with ChangeNotifier {
   String _errorMessage = "";
   String get errorMessage => _errorMessage;
 
-  // Ubah loading state
   void _setLoading(bool value) {
     _isLoading = value;
     notifyListeners();
   }
 
-  // Ubah pesan error
   void _setError(String msg) {
     _errorMessage = msg;
     notifyListeners();
   }
 
-  // ==========================================================
   // SIGN UP
-  // ==========================================================
   Future<bool> signUp({
     required String fullName,
     required String email,
@@ -44,9 +41,8 @@ class AuthProvider with ChangeNotifier {
     _setLoading(false);
 
     if (result == "success") {
-      // Simpan nama pengguna setelah berhasil mendaftar
       _cycleDataService.setFullName(fullName);
-      _cycleDataService.finalizeData(); // Commit nama ke notifier
+      await _cycleDataService.finalizeData(); 
       return true;
     } else {
       _setError(result);
@@ -54,9 +50,7 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  // ==========================================================
   // LOGIN
-  // ==========================================================
   Future<bool> login({
     required String email,
     required String password,
@@ -72,11 +66,10 @@ class AuthProvider with ChangeNotifier {
     _setLoading(false);
 
     if (result == "success") {
-      // Ambil nama pengguna setelah berhasil login
       String? userName = await _authController.getUserName();
       if (userName != null) {
         _cycleDataService.setFullName(userName);
-        _cycleDataService.finalizeData(); // Commit nama ke notifier
+        await _cycleDataService.loadUserData();
       }
       return true;
     } else {
@@ -85,9 +78,7 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  // ==========================================================
   // GOOGLE LOGIN
-  // ==========================================================
   Future<bool> loginWithGoogle() async {
     _setLoading(true);
     _setError("");
@@ -97,11 +88,10 @@ class AuthProvider with ChangeNotifier {
     _setLoading(false);
 
     if (result == "success") {
-      // Ambil nama pengguna setelah berhasil login dengan Google
       String? userName = await _authController.getUserName();
       if (userName != null) {
         _cycleDataService.setFullName(userName);
-        _cycleDataService.finalizeData(); // Commit nama ke notifier
+        await _cycleDataService.loadUserData();
       }
       return true;
     } else {
@@ -110,10 +100,9 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  // ==========================================================
   // LOGOUT
-  // ==========================================================
   Future<void> logout() async {
     await _authController.logout();
+    _cycleDataService.clearAllData(); 
   }
 }

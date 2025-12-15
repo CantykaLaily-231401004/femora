@@ -1,29 +1,28 @@
-import 'dart:convert';
-
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:femora/models/cycle_data.dart';
+import 'package:femora/models/daily_log_model.dart';
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
-// Singleton service to store user cycle data during the app's runtime.
 class CycleDataService {
   static final CycleDataService _instance = CycleDataService._internal();
-  factory CycleDataService() {
-    return _instance;
-  }
+  factory CycleDataService() => _instance;
   CycleDataService._internal();
 
-  // Notifiers for cycle data and user name
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  // Notifiers
   final ValueNotifier<CycleData?> cycleDataNotifier = ValueNotifier(null);
   final ValueNotifier<String?> userNameNotifier = ValueNotifier(null);
   final ValueNotifier<DateTime?> birthDateNotifier = ValueNotifier(null);
   final ValueNotifier<int?> weightNotifier = ValueNotifier(null);
   final ValueNotifier<String?> phoneNumberNotifier = ValueNotifier(null);
-
-  // New notifier to store daily mood (Date -> Emoticon)
+  
+  // Untuk Daily Check-In UI
   final ValueNotifier<Map<DateTime, String>> dailyMoodNotifier = ValueNotifier({});
-  final ValueNotifier<Map<DateTime, List<String>>> dailySymptomsNotifier = ValueNotifier({});
 
-  // Temporary data for the setup flow
+  // Temporary data untuk setup flow
   String? _tempFullName;
   DateTime? _tempBirthDate;
   int? _tempWeight;
@@ -34,7 +33,20 @@ class CycleDataService {
   bool? _tempIsRegular;
   DateTime? _tempLastPeriodStart;
 
-  // --- Methods for the setup flow ---
+  String? get userId => _auth.currentUser?.uid;
+
+  // ========== CLEAR DATA SAAT LOGOUT (PENTING UNTUK MASALAH LENGKET) ==========
+  void clearAllData() {
+    cycleDataNotifier.value = null;
+    userNameNotifier.value = null;
+    birthDateNotifier.value = null;
+    weightNotifier.value = null;
+    phoneNumberNotifier.value = null;
+    dailyMoodNotifier.value = {};
+    _clearTempData();
+  }
+
+  // ========== SETUP FLOW METHODS ==========
   void setFullName(String name) => _tempFullName = name;
   void setBirthDate(DateTime date) => _tempBirthDate = date;
   void setWeight(int weight) => _tempWeight = weight;
@@ -47,37 +59,47 @@ class CycleDataService {
   }
   void setLastPeriodStart(DateTime date) => _tempLastPeriodStart = date;
 
-  // Called at the end of the setup flow to "commit" the data
-  void finalizeData() {
-    if (_tempFullName != null) {
+  Future<void> finalizeData() async {
+    if (userId == null) throw Exception('User not authenticated');
+
+    try {
+      // Save user profile
+      await _firestore.collection('users').doc(userId).set({
+        'fullName': _tempFullName,
+        'birthDate': _tempBirthDate != null ? Timestamp.fromDate(_tempBirthDate!) : null,
+        'weight': _tempWeight,
+        'phoneNumber': _tempPhoneNumber,
+        'createdAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      // Save cycle data
+      if (_tempLastPeriodStart != null && _tempPeriodDuration != null) {
+        final cycleData = CycleData(
+          lastPeriodStart: _tempLastPeriodStart!,
+          periodDuration: _tempPeriodDuration!,
+          minCycleLength: _tempMinCycleLength!,
+          maxCycleLength: _tempMaxCycleLength!,
+          isRegular: _tempIsRegular!,
+        );
+
+        await _firestore.collection('users').doc(userId).update({
+          'cycleData': cycleData.toJson(),
+        });
+
+        cycleDataNotifier.value = cycleData;
+      }
+
+      // Update local notifiers
       userNameNotifier.value = _tempFullName;
-    }
-    if (_tempBirthDate != null) {
       birthDateNotifier.value = _tempBirthDate;
-    }
-    if (_tempWeight != null) {
       weightNotifier.value = _tempWeight;
-    }
-    if (_tempPhoneNumber != null) {
       phoneNumberNotifier.value = _tempPhoneNumber;
-    }
 
-    if (_tempLastPeriodStart != null &&
-        _tempPeriodDuration != null &&
-        _tempMinCycleLength != null &&
-        _tempMaxCycleLength != null &&
-        _tempIsRegular != null) {
-      cycleDataNotifier.value = CycleData(
-        lastPeriodStart: _tempLastPeriodStart!,
-        periodDuration: _tempPeriodDuration!,
-        minCycleLength: _tempMinCycleLength!,
-        maxCycleLength: _tempMaxCycleLength!,
-        isRegular: _tempIsRegular!,
-      );
+      _clearTempData();
+    } catch (e) {
+      debugPrint('Error finalizing data: $e');
+      rethrow;
     }
-
-    _clearTempData();
-    saveDataToPrefs();
   }
 
   void _clearTempData() {
@@ -92,128 +114,158 @@ class CycleDataService {
     _tempLastPeriodStart = null;
   }
 
-  void updateUserName(String newName) {
+  // ========== LOAD DATA DARI FIREBASE (PENTING SAAT LOGIN) ==========
+  Future<void> loadUserData() async {
+    if (userId == null) return;
+
+    try {
+      final doc = await _firestore.collection('users').doc(userId).get();
+      
+      if (doc.exists) {
+        final data = doc.data()!;
+        
+        userNameNotifier.value = data['fullName'];
+        birthDateNotifier.value = data['birthDate'] != null 
+            ? (data['birthDate'] as Timestamp).toDate() 
+            : null;
+        weightNotifier.value = data['weight'];
+        phoneNumberNotifier.value = data['phoneNumber'];
+
+        if (data['cycleData'] != null) {
+          cycleDataNotifier.value = CycleData.fromJson(data['cycleData']);
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading user data: $e');
+    }
+  }
+
+  // ========== UPDATE USER PROFILE ==========
+  Future<void> updateUserName(String newName) async {
+    if (userId == null) throw Exception('User not authenticated');
+    
+    await _firestore.collection('users').doc(userId).update({
+      'fullName': newName,
+    });
     userNameNotifier.value = newName;
-    saveDataToPrefs();
   }
 
-  void updateBirthDate(DateTime newDate) {
+  Future<void> updateBirthDate(DateTime newDate) async {
+    if (userId == null) throw Exception('User not authenticated');
+    
+    await _firestore.collection('users').doc(userId).update({
+      'birthDate': Timestamp.fromDate(newDate),
+    });
     birthDateNotifier.value = newDate;
-    saveDataToPrefs();
   }
 
-  void updateWeight(int newWeight) {
+  Future<void> updateWeight(int newWeight) async {
+    if (userId == null) throw Exception('User not authenticated');
+    
+    await _firestore.collection('users').doc(userId).update({
+      'weight': newWeight,
+    });
     weightNotifier.value = newWeight;
-    saveDataToPrefs();
   }
 
-  void updatePhoneNumber(String newPhoneNumber) {
+  Future<void> updatePhoneNumber(String newPhoneNumber) async {
+    if (userId == null) throw Exception('User not authenticated');
+    
+    await _firestore.collection('users').doc(userId).update({
+      'phoneNumber': newPhoneNumber,
+    });
     phoneNumberNotifier.value = newPhoneNumber;
-    saveDataToPrefs();
   }
 
-  // --- Methods for Daily Check-in ---
-  void setMoodForDay(DateTime day, String mood) {
-    final currentMoods = Map<DateTime, String>.from(dailyMoodNotifier.value);
-    final normalizedDay = DateTime(day.year, day.month, day.day);
-    currentMoods[normalizedDay] = mood;
-    dailyMoodNotifier.value = currentMoods;
-    saveDataToPrefs();
+  // ========== UPDATE CYCLE DATA ==========
+  Future<void> updateCycleData(CycleData newCycleData) async {
+    if (userId == null) throw Exception('User not authenticated');
+    
+    await _firestore.collection('users').doc(userId).update({
+      'cycleData': newCycleData.toJson(),
+    });
+    cycleDataNotifier.value = newCycleData;
   }
 
+  // ========== DAILY CHECK-IN ==========
+  Future<void> saveDailyLog(DailyLogModel log) async {
+    if (userId == null) throw Exception('User not authenticated');
+
+    try {
+      // Simpan ke Firestore
+      await _firestore
+          .collection('daily_logs')
+          .doc(log.id)
+          .set(log.toMap());
+
+      // Update local mood notifier untuk UI
+      final normalizedDay = DateTime(log.date.year, log.date.month, log.date.day);
+      final currentMoods = Map<DateTime, String>.from(dailyMoodNotifier.value);
+      currentMoods[normalizedDay] = log.mood;
+      dailyMoodNotifier.value = currentMoods;
+
+      debugPrint('✅ Daily log saved: ${log.id}');
+    } catch (e) {
+      debugPrint('❌ Error saving daily log: $e');
+      rethrow;
+    }
+  }
+
+  // Cek apakah sudah ada check-in hari ini
+  Future<bool> hasCheckedInToday() async {
+    if (userId == null) return false;
+
+    final today = DateTime.now();
+    final startOfDay = DateTime(today.year, today.month, today.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1));
+
+    try {
+      final snapshot = await _firestore
+          .collection('daily_logs')
+          .where('userId', isEqualTo: userId)
+          .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+          .where('date', isLessThan: Timestamp.fromDate(endOfDay))
+          .limit(1)
+          .get();
+
+      return snapshot.docs.isNotEmpty;
+    } catch (e) {
+      debugPrint('Error checking daily log: $e');
+      return false;
+    }
+  }
+
+  // Get mood untuk tanggal tertentu (untuk UI kalender)
   String? getMoodForDay(DateTime day) {
     final normalizedDay = DateTime(day.year, day.month, day.day);
     return dailyMoodNotifier.value[normalizedDay];
   }
 
-  void setSymptomsForDay(DateTime day, List<String> symptoms) {
-    final currentSymptoms = Map<DateTime, List<String>>.from(dailySymptomsNotifier.value);
-    final normalizedDay = DateTime(day.year, day.month, day.day);
-    currentSymptoms[normalizedDay] = symptoms;
-    dailySymptomsNotifier.value = currentSymptoms;
-    saveDataToPrefs();
-  }
+  // Load moods untuk bulan tertentu
+  Future<void> loadMoodsForMonth(DateTime month) async {
+    if (userId == null) return;
 
-  // ---
-  // Persistence with SharedPreferences
-  // ---
+    final startOfMonth = DateTime(month.year, month.month, 1);
+    final endOfMonth = DateTime(month.year, month.month + 1, 0);
 
-  static const String _userNameKey = 'userName';
-  static const String _cycleDataKey = 'cycleData';
-  static const String _dailyMoodKey = 'dailyMood';
-  static const String _dailySymptomsKey = 'dailySymptoms';
-  static const String _birthDateKey = 'birthDate';
-  static const String _weightKey = 'weight';
-  static const String _phoneNumberKey = 'phoneNumber';
+    try {
+      final snapshot = await _firestore
+          .collection('daily_logs')
+          .where('userId', isEqualTo: userId)
+          .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
+          .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endOfMonth))
+          .get();
 
-  Future<void> saveDataToPrefs() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (userNameNotifier.value != null) {
-      prefs.setString(_userNameKey, userNameNotifier.value!);
-    }
-    if (birthDateNotifier.value != null) {
-      prefs.setString(_birthDateKey, birthDateNotifier.value!.toIso8601String());
-    }
-    if (weightNotifier.value != null) {
-      prefs.setInt(_weightKey, weightNotifier.value!);
-    }
-    if (phoneNumberNotifier.value != null) {
-      prefs.setString(_phoneNumberKey, phoneNumberNotifier.value!);
-    }
-    if (cycleDataNotifier.value != null) {
-      prefs.setString(_cycleDataKey, json.encode(cycleDataNotifier.value!.toJson()));
-    }
-
-    final encodedMoods = dailyMoodNotifier.value.map((key, value) => MapEntry(key.toIso8601String(), value));
-    prefs.setString(_dailyMoodKey, json.encode(encodedMoods));
-
-    final encodedSymptoms = dailySymptomsNotifier.value.map((key, value) => MapEntry(key.toIso8601String(), value));
-    prefs.setString(_dailySymptomsKey, json.encode(encodedSymptoms));
-  }
-
-  Future<void> loadDataFromPrefs() async {
-    final prefs = await SharedPreferences.getInstance();
-
-    // Load user name
-    if (prefs.containsKey(_userNameKey)) {
-      userNameNotifier.value = prefs.getString(_userNameKey);
-    }
-
-    // Load birth date
-    if (prefs.containsKey(_birthDateKey)) {
-      final dateString = prefs.getString(_birthDateKey);
-      if (dateString != null) {
-        birthDateNotifier.value = DateTime.parse(dateString);
+      final moodMap = <DateTime, String>{};
+      for (var doc in snapshot.docs) {
+        final log = DailyLogModel.fromFirestore(doc);
+        final normalizedDate = DateTime(log.date.year, log.date.month, log.date.day);
+        moodMap[normalizedDate] = log.mood;
       }
-    }
 
-    // Load weight
-    if (prefs.containsKey(_weightKey)) {
-      weightNotifier.value = prefs.getInt(_weightKey);
+      dailyMoodNotifier.value = {...dailyMoodNotifier.value, ...moodMap};
+    } catch (e) {
+      debugPrint('Error loading moods: $e');
     }
-
-    // Load phone number
-    if (prefs.containsKey(_phoneNumberKey)) {
-      phoneNumberNotifier.value = prefs.getString(_phoneNumberKey);
-    }
-
-    // Load cycle data
-    if (prefs.containsKey(_cycleDataKey)) {
-      final data = json.decode(prefs.getString(_cycleDataKey)!);
-      cycleDataNotifier.value = CycleData.fromJson(data);
-    }
-
-    // Load daily moods
-    if (prefs.containsKey(_dailyMoodKey)) {
-      final Map<String, dynamic> decodedMoods = json.decode(prefs.getString(_dailyMoodKey)!);
-      dailyMoodNotifier.value = decodedMoods.map((key, value) => MapEntry(DateTime.parse(key), value as String));
-    }
-
-    // Load daily symptoms
-    if (prefs.containsKey(_dailySymptomsKey)) {
-      final Map<String, dynamic> decodedSymptoms = json.decode(prefs.getString(_dailySymptomsKey)!);
-      dailySymptomsNotifier.value = decodedSymptoms.map((key, value) => MapEntry(DateTime.parse(key), (value as List).cast<String>()));
-    }
-
   }
 }

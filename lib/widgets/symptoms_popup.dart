@@ -1,9 +1,19 @@
+import 'package:femora/models/daily_log_model.dart';
 import 'package:femora/services/cycle_data_service.dart';
 import 'package:femora/widgets/symptom_recommendations_popup.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class SymptomsPopup extends StatefulWidget {
-  const SymptomsPopup({Key? key}) : super(key: key);
+  final String initialMood;
+  final bool isMenstruating;
+
+  // Tambahkan parameter agar data nyambung dari mood popup
+  const SymptomsPopup({
+    Key? key, 
+    required this.initialMood,
+    required this.isMenstruating,
+  }) : super(key: key);
 
   @override
   _SymptomsPopupState createState() => _SymptomsPopupState();
@@ -19,25 +29,47 @@ class _SymptomsPopupState extends State<SymptomsPopup> {
     'Kembung': false,
   };
 
-  void _showRecommendations() {
+  void _showRecommendations() async {
     final selectedSymptoms = _symptoms.entries
         .where((entry) => entry.value)
         .map((entry) => entry.key)
         .toList();
 
-    CycleDataService().setSymptomsForDay(DateTime.now(), selectedSymptoms);
+    // --- LOGIKA PENYIMPANAN KE FIREBASE ---
+    final service = CycleDataService();
+    final userId = service.userId;
 
-    Navigator.of(context).pop();
+    if (userId != null) {
+      final now = DateTime.now();
+      final dateId = DateFormat('yyyyMMdd').format(now);
+      final id = '${userId}_$dateId';
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      isDismissible: true, // This is the final popup, so it can be dismissed
-      backgroundColor: Colors.transparent,
-      builder: (BuildContext context) {
-        return SymptomRecommendationsPopup(selectedSymptoms: selectedSymptoms);
-      },
-    );
+      final log = DailyLogModel(
+        id: id,
+        userId: userId,
+        date: now,
+        mood: widget.initialMood, // Ambil dari yang dilempar mood popup
+        symptoms: selectedSymptoms,
+        isMenstruation: widget.isMenstruating,
+      );
+
+      await service.saveDailyLog(log);
+    }
+    // --------------------------------------
+
+    if (mounted) {
+      Navigator.of(context).pop();
+
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        isDismissible: true,
+        backgroundColor: Colors.transparent,
+        builder: (BuildContext context) {
+          return SymptomRecommendationsPopup(selectedSymptoms: selectedSymptoms);
+        },
+      );
+    }
   }
 
   Widget _buildSymptomItem(String title) {
@@ -64,9 +96,7 @@ class _SymptomsPopupState extends State<SymptomsPopup> {
       checkColor: Colors.white,
       controlAffinity: ListTileControlAffinity.leading,
       side: const BorderSide(color: Color(0xFFF75270), width: 1.3),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(4),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
     );
   }
 
