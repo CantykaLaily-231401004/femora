@@ -55,43 +55,64 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
-      // Cek apakah email terdaftar dengan metode apa pun.
+      // This check requires "Email Enumeration Protection" to be DISABLED in Firebase settings.
       final signInMethods = await FirebaseAuth.instance.fetchSignInMethodsForEmail(email);
 
       if (!mounted) return;
 
       if (signInMethods.isEmpty) {
-        // HANYA jika email benar-benar tidak ada, tampilkan error ini.
-        _showInfoDialog('Gagal', 'Email tidak terdaftar. Silakan periksa kembali atau daftar akun baru.');
+        // Email not found, show a dialog with a register option.
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Email Tidak Terdaftar'),
+            content: Text('Email "$email" tidak terdaftar. Apakah Anda ingin membuat akun baru?'),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.0)),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Tutup', style: TextStyle(color: AppColors.textSecondary)),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  context.push('/register');
+                },
+                child: const Text('Daftar', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        );
       } else {
-        // JIKA EMAIL ADA (via Google, password, dll), selalu kirim link reset.
-        // Ini adalah alur yang benar dan memungkinkan pengguna yang daftar via Google untuk membuat password.
+        // Email found, send the reset link.
         await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Tautan reset kata sandi telah dikirim ke email Anda.')),
+            const SnackBar(
+              content: Text('Tautan reset kata sandi telah dikirim ke email Anda.'),
+              backgroundColor: AppColors.primary,
+            ),
           );
           context.pop();
         }
       }
     } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      String errorMessage = 'Terjadi kesalahan. Silakan coba lagi nanti.';
+      if (e.code == 'invalid-email') {
+        errorMessage = 'Format email tidak valid.';
+      }
+      _showInfoDialog('Gagal', errorMessage);
+    } catch (e) {
       if (mounted) {
-        String errorMessage = 'Terjadi kesalahan, coba lagi nanti.';
-        if (e.code == 'invalid-email') {
-          errorMessage = 'Format email tidak valid.';
-        }
-        _showInfoDialog('Gagal', errorMessage);
+        _showInfoDialog('Gagal', 'Terjadi sebuah kesalahan. Periksa koneksi internet Anda.');
       }
     } finally {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() => _isLoading = false);
       }
     }
   }

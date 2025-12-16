@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:femora/config/constants.dart';
@@ -34,6 +35,25 @@ class _SignUpScreenState extends State<SignUpScreen> {
     }
   }
 
+  void _showPolicyDialog(String title, List<Widget> content) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title, style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+        content: SingleChildScrollView(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: content),
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.0)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Tutup', style: TextStyle(color: AppColors.primary)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     SizeConfig.init(context);
@@ -42,29 +62,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
       backgroundColor: AppColors.white,
       body: Stack(
         children: [
-          // Background Gradient
           GradientBackground(
             height: SizeConfig.getHeight(45),
             child: const SizedBox(),
           ),
-
           SafeArea(
             child: Column(
               children: [
-                // Back button
                 Align(
                   alignment: Alignment.topLeft,
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                    child: CustomBackButton(
-                      onPressed: () => context.pop(),
-                    ),
+                    child: CustomBackButton(onPressed: () => context.pop()),
                   ),
                 ),
-
                 SizedBox(height: SizeConfig.getHeight(4)),
-
-                // Main Content Card
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: SizeConfig.getWidth(5)),
                   child: Container(
@@ -111,40 +123,69 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     ),
                   ),
                 ),
-
                 const Spacer(),
-
-                // Bottom Policy Text
                 Padding(
-                  padding: EdgeInsets.only(
-                    bottom: SizeConfig.getHeight(2),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Kebijakan Privasi',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: SizeConfig.getFontSize(12),
-                          fontFamily: AppTextStyles.fontFamily,
-                        ),
+                  padding: EdgeInsets.fromLTRB(20, 20, 20, SizeConfig.getHeight(2)),
+                  child: RichText(
+                    textAlign: TextAlign.center,
+                    text: TextSpan(
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: SizeConfig.getFontSize(12),
+                        fontFamily: AppTextStyles.fontFamily,
                       ),
-                      SizedBox(width: SizeConfig.getWidth(8)),
-                      Text(
-                        'Syarat & Ketentuan',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: SizeConfig.getFontSize(12),
-                          fontFamily: AppTextStyles.fontFamily,
+                      children: [
+                        const TextSpan(text: 'Dengan melanjutkan, Anda menyetujui\n'),
+                        TextSpan(
+                          text: 'Kebijakan Privasi',
+                          style: const TextStyle(decoration: TextDecoration.underline),
+                          recognizer: TapGestureRecognizer()..onTap = () {
+                              _showPolicyDialog('Kebijakan Privasi', _privacyPolicyContent(context));
+                            },
                         ),
-                      ),
-                    ],
+                        const TextSpan(text: ' dan '),
+                        TextSpan(
+                          text: 'Syarat & Ketentuan',
+                          style: const TextStyle(decoration: TextDecoration.underline),
+                          recognizer: TapGestureRecognizer()..onTap = () {
+                              _showPolicyDialog('Syarat & Ketentuan', _termsAndConditionsContent(context));
+                            },
+                        ),
+                         const TextSpan(text: ' kami'),
+                      ],
+                    ),
                   ),
                 ),
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _privacyPolicyContent(BuildContext context) => [
+    _buildSection('Pendahuluan', 'Selamat datang di Femora. Kami menghargai privasi Anda dan berkomitmen melindungi data pribadi Anda. Kebijakan ini menjelaskan bagaimana kami mengumpulkan, menggunakan, dan membagikan informasi Anda.'),
+    _buildSection('Informasi yang Kami Kumpulkan', 'Kami mengumpulkan informasi yang Anda berikan langsung (nama, email, info siklus) dan informasi teknis perangkat Anda.'),
+    _buildSection('Penggunaan Informasi', 'Informasi Anda digunakan untuk personalisasi, prediksi siklus, notifikasi, dan meningkatkan layanan kami.'),
+    _buildSection('Keamanan Data', 'Kami menerapkan langkah-langkah keamanan yang wajar untuk melindungi informasi Anda, namun tidak ada metode yang 100% aman.'),
+  ];
+
+  List<Widget> _termsAndConditionsContent(BuildContext context) => [
+    _buildSection('Penerimaan Persyaratan', 'Dengan menggunakan aplikasi Femora, Anda setuju untuk terikat oleh Syarat & Ketentuan ini. Jika Anda tidak setuju, jangan gunakan aplikasi ini.'),
+    _buildSection('Penggunaan Aplikasi', 'Anda setuju untuk menggunakan aplikasi hanya untuk tujuan yang sah dan tidak melanggar hak orang lain. Anda bertanggung jawab penuh atas informasi yang Anda masukkan.'),
+    _buildSection('Batasan Tanggung Jawab', 'Aplikasi ini disediakan \'sebagaimana adanya\'. Kami tidak menjamin keakuratan prediksi atau informasi yang diberikan. Aplikasi ini tidak boleh digunakan sebagai pengganti nasihat medis profesional.'),
+  ];
+
+  Widget _buildSection(String title, String content) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.textPrimary)),
+          const SizedBox(height: 8),
+          Text(content, textAlign: TextAlign.justify, style: const TextStyle(fontSize: 14, height: 1.4)),
         ],
       ),
     );
