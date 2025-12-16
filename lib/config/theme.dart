@@ -23,7 +23,13 @@ class AppTheme {
       primarySwatch: Colors.pink,
       primaryColor: AppColors.primary,
       scaffoldBackgroundColor: AppColors.background,
-      fontFamily: AppFonts.primary,
+      // 1. Set the global font family
+      fontFamily: AppFonts.primary, 
+
+      // 2. Explicitly set it for the TextTheme to ensure consistency
+      textTheme: const TextTheme().apply(fontFamily: AppFonts.primary),
+      primaryTextTheme: const TextTheme().apply(fontFamily: AppFonts.primary),
+
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
           TargetPlatform.android: NoTransitionsBuilder(),

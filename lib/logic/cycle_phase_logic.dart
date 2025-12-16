@@ -2,47 +2,63 @@ import 'package:femora/models/cycle_phase_data.dart';
 import 'package:femora/logic/prediction_logic.dart';
 
 class CyclePhaseLogic {
-  static CyclePhaseData getCurrentPhase(CyclePrediction prediction, DateTime today) {
-    const int lutealLength = 14;
-
+  static CyclePhaseData getDynamicPhaseData(CyclePrediction prediction, DateTime today) {
     final todayNormalized = DateTime(today.year, today.month, today.day);
 
-    // Ensure there is a next predicted start date
-    if (prediction.predictedPeriodStart == null) {
-      // Default or error case if prediction is not possible
-      return CyclePhaseData.follicular; 
+    final lastPeriodStart = prediction.lastPeriodStart;
+    final periodLength = prediction.periodDuration;
+    final cycleLength = (prediction.minCycleLength + prediction.maxCycleLength) ~/ 2;
+
+    if (cycleLength <= 0 || periodLength <= 0) {
+      return CyclePhaseData.follicular.copyWith(subtitle: "Data siklus tidak lengkap", remainingTime: "-");
     }
 
-    final cycleLength = prediction.predictedPeriodStart!.difference(prediction.lastPeriodStart).inDays;
-    if (cycleLength <= 0) return CyclePhaseData.follicular; // Avoid division by zero or negative lengths
+    // 1. Calculation based on your provided formula
+    const lutealLength = 14;
+    final ovulationDay = cycleLength - lutealLength;
+    final currentDayInCycle = todayNormalized.difference(lastPeriodStart).inDays + 1;
 
-    final ovulationDayIndex = cycleLength - lutealLength;
-    final ovulationDate = prediction.lastPeriodStart.add(Duration(days: ovulationDayIndex - 1));
-
-    // Define phase date ranges
-    final menstruationStart = prediction.lastPeriodStart;
-    final menstruationEnd = menstruationStart.add(Duration(days: prediction.periodDuration - 1));
-    final follicularEnd = ovulationDate;
-    final ovulationWindowStart = ovulationDate.subtract(const Duration(days: 2));
-    final ovulationWindowEnd = ovulationDate.add(const Duration(days: 1));
-    final lutealStart = ovulationDate.add(const Duration(days: 1));
-    final lutealEnd = prediction.predictedPeriodStart!.subtract(const Duration(days: 1));
-
-    // Determine the current phase based on today's date
-    if (!todayNormalized.isBefore(menstruationStart) && !todayNormalized.isAfter(menstruationEnd)) {
-      return CyclePhaseData.menstrual;
-    }
-    if (!todayNormalized.isBefore(ovulationWindowStart) && !todayNormalized.isAfter(ovulationWindowEnd)) {
-      return CyclePhaseData.ovulation;
-    }
-    if (!todayNormalized.isBefore(lutealStart) && !todayNormalized.isAfter(lutealEnd)) {
-      return CyclePhaseData.luteal;
-    }
-    if (!todayNormalized.isBefore(prediction.lastPeriodStart) && !todayNormalized.isAfter(follicularEnd)) {
-      return CyclePhaseData.follicular;
+    // Handle cases where the cycle hasn't started yet (last period is in the future)
+    if (currentDayInCycle <= 0) {
+       int daysUntilStart = currentDayInCycle.abs();
+       return CyclePhaseData.luteal.copyWith(subtitle: "Menstruasi dalam", remainingTime: "$daysUntilStart hari");
     }
 
-    // Default case if today falls outside all defined phases
-    return CyclePhaseData.follicular;
+    // 2. Define phase boundaries with a more realistic fertile window
+    final menstrualEnd = periodLength;
+    final ovulationStart = ovulationDay - 2; // Expanded 5-day fertile window
+    final ovulationEnd = ovulationDay + 2;
+    final follicularEnd = ovulationStart - 1;
+
+    // 3. Determine the current phase and calculate the countdown to the *next* phase
+    if (currentDayInCycle <= menstrualEnd) {
+      // Current: Menstrual -> Next: Follicular
+      int daysToNextPhase = menstrualEnd - currentDayInCycle + 1;
+      return CyclePhaseData.menstrual.copyWith(
+        subtitle: "Folikular dalam  ", // CORRECTED: Always points to the next phase
+        remainingTime: "$daysToNextPhase hari",
+      );
+    } else if (currentDayInCycle <= follicularEnd) {
+      // Current: Follicular -> Next: Ovulation
+      int daysToNextPhase = ovulationStart - currentDayInCycle;
+      return CyclePhaseData.follicular.copyWith(
+        subtitle: "Ovulasi dalam  ",
+        remainingTime: "${daysToNextPhase >= 0 ? daysToNextPhase : 0} hari",
+      );
+    } else if (currentDayInCycle <= ovulationEnd) {
+      // Current: Ovulation -> Next: Luteal
+      int daysToNextPhase = ovulationEnd - currentDayInCycle + 1;
+      return CyclePhaseData.ovulation.copyWith(
+        subtitle: "Luteal dalam  ",
+        remainingTime: "${daysToNextPhase >= 0 ? daysToNextPhase : 0} hari",
+      );
+    } else {
+      // Current: Luteal -> Next: Menstrual
+      int daysToNextPhase = cycleLength - currentDayInCycle + 1;
+      return CyclePhaseData.luteal.copyWith(
+        subtitle: "Menstruasi dalam  ",
+        remainingTime: "${daysToNextPhase >= 0 ? daysToNextPhase : 0} hari",
+      );
+    }
   }
 }
