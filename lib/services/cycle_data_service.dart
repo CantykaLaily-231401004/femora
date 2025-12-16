@@ -18,7 +18,7 @@ class CycleDataService {
   final ValueNotifier<DateTime?> birthDateNotifier = ValueNotifier(null);
   final ValueNotifier<int?> weightNotifier = ValueNotifier(null);
   final ValueNotifier<String?> phoneNumberNotifier = ValueNotifier(null);
-  
+
   // Untuk Daily Check-In UI
   final ValueNotifier<Map<DateTime, String>> dailyMoodNotifier = ValueNotifier({});
 
@@ -35,32 +35,47 @@ class CycleDataService {
 
   String? get userId => _auth.currentUser?.uid;
 
-  // ========== CLEAR DATA SAAT LOGOUT (PENTING UNTUK MASALAH LENGKET) ==========
+  // ========== CLEAR DATA SAAT LOGOUT (PENTING!) ==========
   void clearAllData() {
+    debugPrint('🧹 CLEARING ALL DATA...');
+
+    // Clear notifiers
     cycleDataNotifier.value = null;
     userNameNotifier.value = null;
     birthDateNotifier.value = null;
     weightNotifier.value = null;
     phoneNumberNotifier.value = null;
     dailyMoodNotifier.value = {};
+
+    // Clear temp data
     _clearTempData();
+
+    debugPrint('✅ All data cleared!');
   }
 
   // ========== SETUP FLOW METHODS ==========
-  void setFullName(String name) => _tempFullName = name;
+  void setFullName(String name) {
+    debugPrint('📝 Setting full name: $name');
+    _tempFullName = name;
+  }
+
   void setBirthDate(DateTime date) => _tempBirthDate = date;
   void setWeight(int weight) => _tempWeight = weight;
   void setPhoneNumber(String phoneNumber) => _tempPhoneNumber = phoneNumber;
   void setPeriodDuration(int duration) => _tempPeriodDuration = duration;
+
   void setCycleLength({required int min, required int max, required bool isRegular}) {
     _tempMinCycleLength = min;
     _tempMaxCycleLength = max;
     _tempIsRegular = isRegular;
   }
+
   void setLastPeriodStart(DateTime date) => _tempLastPeriodStart = date;
 
   Future<void> finalizeData() async {
     if (userId == null) throw Exception('User not authenticated');
+
+    debugPrint('💾 Finalizing data for user: $userId');
 
     try {
       // Save user profile
@@ -87,6 +102,7 @@ class CycleDataService {
         });
 
         cycleDataNotifier.value = cycleData;
+        debugPrint('✅ Cycle data saved!');
       }
 
       // Update local notifiers
@@ -96,8 +112,9 @@ class CycleDataService {
       phoneNumberNotifier.value = _tempPhoneNumber;
 
       _clearTempData();
+      debugPrint('✅ Data finalized successfully!');
     } catch (e) {
-      debugPrint('Error finalizing data: $e');
+      debugPrint('❌ Error finalizing data: $e');
       rethrow;
     }
   }
@@ -114,36 +131,47 @@ class CycleDataService {
     _tempLastPeriodStart = null;
   }
 
-  // ========== LOAD DATA DARI FIREBASE (PENTING SAAT LOGIN) ==========
+  // ========== LOAD DATA DARI FIREBASE ==========
   Future<void> loadUserData() async {
-    if (userId == null) return;
+    if (userId == null) {
+      debugPrint('⚠️ Cannot load user data: userId is null');
+      return;
+    }
+
+    debugPrint('📥 Loading user data for: $userId');
 
     try {
       final doc = await _firestore.collection('users').doc(userId).get();
-      
-      if (doc.exists) {
-        final data = doc.data()!;
-        
-        userNameNotifier.value = data['fullName'];
-        birthDateNotifier.value = data['birthDate'] != null 
-            ? (data['birthDate'] as Timestamp).toDate() 
-            : null;
-        weightNotifier.value = data['weight'];
-        phoneNumberNotifier.value = data['phoneNumber'];
 
-        if (data['cycleData'] != null) {
-          cycleDataNotifier.value = CycleData.fromJson(data['cycleData']);
-        }
+      if (!doc.exists) {
+        debugPrint('⚠️ User document does not exist');
+        return;
       }
+
+      final data = doc.data()!;
+
+      userNameNotifier.value = data['fullName'];
+      birthDateNotifier.value = data['birthDate'] != null
+          ? (data['birthDate'] as Timestamp).toDate()
+          : null;
+      weightNotifier.value = data['weight'];
+      phoneNumberNotifier.value = data['phoneNumber'];
+
+      if (data['cycleData'] != null) {
+        cycleDataNotifier.value = CycleData.fromJson(data['cycleData']);
+        debugPrint('✅ Cycle data loaded!');
+      }
+
+      debugPrint('✅ User data loaded successfully!');
     } catch (e) {
-      debugPrint('Error loading user data: $e');
+      debugPrint('❌ Error loading user data: $e');
     }
   }
 
   // ========== UPDATE USER PROFILE ==========
   Future<void> updateUserName(String newName) async {
     if (userId == null) throw Exception('User not authenticated');
-    
+
     await _firestore.collection('users').doc(userId).update({
       'fullName': newName,
     });
@@ -152,7 +180,7 @@ class CycleDataService {
 
   Future<void> updateBirthDate(DateTime newDate) async {
     if (userId == null) throw Exception('User not authenticated');
-    
+
     await _firestore.collection('users').doc(userId).update({
       'birthDate': Timestamp.fromDate(newDate),
     });
@@ -161,7 +189,7 @@ class CycleDataService {
 
   Future<void> updateWeight(int newWeight) async {
     if (userId == null) throw Exception('User not authenticated');
-    
+
     await _firestore.collection('users').doc(userId).update({
       'weight': newWeight,
     });
@@ -170,7 +198,7 @@ class CycleDataService {
 
   Future<void> updatePhoneNumber(String newPhoneNumber) async {
     if (userId == null) throw Exception('User not authenticated');
-    
+
     await _firestore.collection('users').doc(userId).update({
       'phoneNumber': newPhoneNumber,
     });
@@ -180,7 +208,7 @@ class CycleDataService {
   // ========== UPDATE CYCLE DATA ==========
   Future<void> updateCycleData(CycleData newCycleData) async {
     if (userId == null) throw Exception('User not authenticated');
-    
+
     await _firestore.collection('users').doc(userId).update({
       'cycleData': newCycleData.toJson(),
     });
@@ -192,13 +220,11 @@ class CycleDataService {
     if (userId == null) throw Exception('User not authenticated');
 
     try {
-      // Simpan ke Firestore
       await _firestore
           .collection('daily_logs')
           .doc(log.id)
           .set(log.toMap());
 
-      // Update local mood notifier untuk UI
       final normalizedDay = DateTime(log.date.year, log.date.month, log.date.day);
       final currentMoods = Map<DateTime, String>.from(dailyMoodNotifier.value);
       currentMoods[normalizedDay] = log.mood;
@@ -211,7 +237,6 @@ class CycleDataService {
     }
   }
 
-  // Cek apakah sudah ada check-in hari ini
   Future<bool> hasCheckedInToday() async {
     if (userId == null) return false;
 
@@ -235,13 +260,11 @@ class CycleDataService {
     }
   }
 
-  // Get mood untuk tanggal tertentu (untuk UI kalender)
   String? getMoodForDay(DateTime day) {
     final normalizedDay = DateTime(day.year, day.month, day.day);
     return dailyMoodNotifier.value[normalizedDay];
   }
 
-  // Load moods untuk bulan tertentu
   Future<void> loadMoodsForMonth(DateTime month) async {
     if (userId == null) return;
 

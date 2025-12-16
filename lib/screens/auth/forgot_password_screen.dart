@@ -1,6 +1,8 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:femora/config/constants.dart';
+import 'package:femora/widgets/auth_footer.dart';
 import 'package:femora/widgets/auth_header.dart';
 import 'package:femora/widgets/size_config.dart';
 import 'package:femora/widgets/custom_back_button.dart';
@@ -17,6 +19,7 @@ class ForgotPasswordScreen extends StatefulWidget {
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final TextEditingController _emailController = TextEditingController();
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -24,14 +27,73 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     super.dispose();
   }
 
-  void _sendOtp() {
-    if (_emailController.text.isEmpty) {
+  void _showInfoDialog(String title, String message) {
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.0)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK', style: TextStyle(color: AppColors.primary)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _sendResetLink() async {
+    if (!mounted || _isLoading) return;
+    final email = _emailController.text.trim();
+    if (email.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Harap isi email')),
+        const SnackBar(content: Text('Harap masukkan alamat email Anda.')),
       );
       return;
     }
-    context.push('/reset-password');
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Cek apakah email terdaftar dengan metode apa pun.
+      final signInMethods = await FirebaseAuth.instance.fetchSignInMethodsForEmail(email);
+
+      if (!mounted) return;
+
+      if (signInMethods.isEmpty) {
+        // HANYA jika email benar-benar tidak ada, tampilkan error ini.
+        _showInfoDialog('Gagal', 'Email tidak terdaftar. Silakan periksa kembali atau daftar akun baru.');
+      } else {
+        // JIKA EMAIL ADA (via Google, password, dll), selalu kirim link reset.
+        // Ini adalah alur yang benar dan memungkinkan pengguna yang daftar via Google untuk membuat password.
+        await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Tautan reset kata sandi telah dikirim ke email Anda.')),
+          );
+          context.pop();
+        }
+      }
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        String errorMessage = 'Terjadi kesalahan, coba lagi nanti.';
+        if (e.code == 'invalid-email') {
+          errorMessage = 'Format email tidak valid.';
+        }
+        _showInfoDialog('Gagal', errorMessage);
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -42,17 +104,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       backgroundColor: AppColors.white,
       body: Stack(
         children: [
-          // Gradient Background
           GradientBackground(
             height: SizeConfig.getHeight(40),
             child: const SizedBox(),
           ),
-
-          // Main Content
           SafeArea(
             child: Column(
               children: [
-                // Back button
                 Align(
                   alignment: Alignment.topLeft,
                   child: Padding(
@@ -62,10 +120,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     ),
                   ),
                 ),
-
                 SizedBox(height: SizeConfig.getHeight(4)),
-
-                // Form Area
                 Expanded(
                   child: SingleChildScrollView(
                     padding: EdgeInsets.symmetric(horizontal: SizeConfig.getWidth(5)),
@@ -89,66 +144,36 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           ),
                           child: Column(
                             children: [
-                              // Header
                               const AuthHeader(
                                 title: 'Lupa Kata Sandi',
-                                subtitle: 'Masukkan alamat emailmu untuk kirim tautan reset kata sandi',
-                                titleColor: Color(0xFFDC143C),
+                                subtitle: 'Masukkan email terdaftar untuk reset kata sandi',
+                                titleColor: AppColors.primary,
                               ),
-                              
                               SizedBox(height: SizeConfig.getHeight(3)),
-
-                              // Email Field
                               CustomTextField(
                                 controller: _emailController,
                                 hintText: 'Email',
                                 icon: Icons.email_outlined,
                                 keyboardType: TextInputType.emailAddress,
                               ),
-
                               SizedBox(height: SizeConfig.getHeight(4)),
-
-                              // Kirim Kode OTP Button
                               PrimaryButton(
-                                text: 'Kirim Kode OTP',
-                                onPressed: _sendOtp,
+                                text: 'Kirim Tautan',
+                                onPressed: _sendResetLink,
+                                isLoading: _isLoading,
                               ),
                             ],
                           ),
                         ),
+                        SizedBox(height: SizeConfig.getHeight(4)),
+                        AuthFooter(
+                          bottomText: 'Kembali ke',
+                          actionText: 'Masuk',
+                          onAction: () => context.go('/login'),
+                        ),
                         SizedBox(height: SizeConfig.getHeight(2)),
                       ],
                     ),
-                  ), 
-                ),
-
-                // Bottom Policy Text
-                Padding(
-                  padding: EdgeInsets.symmetric(
-                    vertical: SizeConfig.getHeight(2),
-                    horizontal: SizeConfig.getWidth(5),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Kebijakan Privasi',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: SizeConfig.getFontSize(12),
-                          fontFamily: AppTextStyles.fontFamily,
-                        ),
-                      ),
-                      SizedBox(width: SizeConfig.getWidth(8)),
-                      Text(
-                        'Syarat & Ketentuan',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: SizeConfig.getFontSize(12),
-                          fontFamily: AppTextStyles.fontFamily,
-                        ),
-                      ),
-                    ],
                   ),
                 ),
               ],

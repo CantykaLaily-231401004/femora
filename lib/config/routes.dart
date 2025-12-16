@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:femora/config/constants.dart';
 import 'package:femora/screens/auth/forgot_password_screen.dart';
 import 'package:femora/screens/auth/login_screen.dart';
@@ -31,9 +32,12 @@ import 'package:femora/widgets/bottom_nav_bar.dart';
 import 'package:femora/widgets/gradient_background.dart';
 import 'package:femora/widgets/home_header.dart';
 import 'package:femora/widgets/size_config.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 
 /// Route path constants
 class AppRoutes {
@@ -63,13 +67,11 @@ class AppRoutes {
   // History Routes
   static const String history = '/history';
   static const String cycleHistoryDetail = '/cycle-history-detail';
-  
-  // Note: Pastikan di Home Screen kamu menggunakan '/cycle-edit' bukan '/profile/edit_cycle'
-  static const String cycleEdit = '/cycle-edit'; 
+  static const String cycleEdit = '/cycle-edit';
   static const String moodPicker = '/mood-picker';
   
   // Profile Settings Routes
-  static const String editCycle = '/edit-cycle'; // Ini sepertinya screen lama?
+  static const String editCycle = '/edit-cycle';
   static const String alarm = '/alarm';
   static const String changePassword = '/change-password';
   static const String personalData = '/personal-data';
@@ -82,6 +84,48 @@ class AppRouter {
   static GoRouter createRouter() {
     return GoRouter(
       initialLocation: AppRoutes.splash,
+      refreshListenable: GoRouterRefreshStream(FirebaseAuth.instance.authStateChanges()),
+      redirect: (BuildContext context, GoRouterState state) async {
+        final location = state.matchedLocation;
+
+        // Biarkan splash screen selalu ditampilkan. Navigasi dari splash screen
+        // akan ditangani di dalam widget SplashScreen itu sendiri.
+        if (location == AppRoutes.splash) {
+          return null;
+        }
+
+        final prefs = await SharedPreferences.getInstance();
+        final onboardingComplete = prefs.getBool('onboardingComplete') ?? false;
+        final loggedIn = FirebaseAuth.instance.currentUser != null;
+
+        final unprotectedRoutes = [
+          AppRoutes.onboarding,
+          AppRoutes.login,
+          AppRoutes.signup,
+          AppRoutes.register,
+          AppRoutes.forgotPassword,
+          AppRoutes.resetPassword,
+          AppRoutes.passwordSuccess,
+        ];
+        final isPublicRoute = unprotectedRoutes.contains(location);
+
+        // Jika pengguna tidak login dan mencoba mengakses rute yang dilindungi, arahkan ke login.
+        if (!loggedIn && !isPublicRoute) {
+          return AppRoutes.login;
+        }
+
+        // Jika pengguna sudah login.
+        if (loggedIn) {
+          final isAtAuthFlow = location == AppRoutes.login || location == AppRoutes.onboarding || location == AppRoutes.register;
+          // Jika pengguna mencoba mengakses halaman login/onboarding, arahkan sesuai status onboarding.
+          if (isAtAuthFlow) {
+             return onboardingComplete ? AppRoutes.home : AppRoutes.profileSetup;
+          }
+        }
+
+        // Jika tidak ada kondisi di atas yang terpenuhi, jangan lakukan pengalihan.
+        return null;
+      },
       routes: [
         // ============================================
         // AUTH & ONBOARDING ROUTES
@@ -166,29 +210,20 @@ class AppRouter {
           name: 'cycle-history-detail',
           builder: (context, state) => const CycleHistoryDetailScreen(),
         ),
-        
-        // --- BAGIAN YANG DIPERBAIKI ---
         GoRoute(
-          path: AppRoutes.cycleEdit, // '/cycle-edit'
+          path: AppRoutes.cycleEdit,
           name: 'cycle-edit',
-          builder: (context, state) {
-            // Kita kirim parameter extra langsung ke CycleEditScreen
-            // extra bisa berupa DateTime atau null
-            return CycleEditScreen(
-              extra: state.extra, 
-            );
-          },
+          builder: (context, state) => CycleEditScreen(
+            extra: state.extra,
+          ),
         ),
         GoRoute(
           path: AppRoutes.moodPicker,
           name: 'mood-picker',
           builder: (context, state) => MoodPickerScreen(
-            // Tambahkan default value biar ga crash kalau null
             initialMood: state.extra as String? ?? 'Baik',
           ),
         ),
-        // -----------------------------
-
         GoRoute(
           path: AppRoutes.editCycle,
           builder: (context, state) => const EditCycleScreen(),
@@ -277,8 +312,6 @@ class ScaffoldWithSharedUI extends StatelessWidget {
     }
 
     final currentIndex = getCurrentIndex();
-    
-    // Pastikan CycleDataService tersedia di sini (dari Provider di main.dart)
     final cycleDataService = Provider.of<CycleDataService>(context);
 
     return Scaffold(
@@ -326,5 +359,21 @@ class ScaffoldWithSharedUI extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+// Helper class to bridge Stream and ChangeNotifier for GoRouter
+class GoRouterRefreshStream extends ChangeNotifier {
+  GoRouterRefreshStream(Stream<dynamic> stream) {
+    notifyListeners();
+    _subscription = stream.asBroadcastStream().listen((_) => notifyListeners());
+  }
+
+  late final StreamSubscription<dynamic> _subscription;
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
   }
 }

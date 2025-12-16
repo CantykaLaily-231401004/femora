@@ -63,35 +63,48 @@ class _CycleLengthScreenState extends State<CycleLengthScreen> {
                 _buildToggleButton('Tidak Teratur', !_isRegular),
               ],
             ),
-            const Spacer(),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                _buildPicker(
-                  initialItem: _startCycle - _minCycle,
-                  onSelectedItemChanged: (index) {
-                    setState(() => _startCycle = index + _minCycle);
-                  },
-                ),
-                const Text("-", style: TextStyle(fontSize: 24, color: AppColors.textSecondary)),
-                _buildPicker(
-                  initialItem: _endCycle - _minCycle,
-                  onSelectedItemChanged: (index) {
-                    setState(() => _endCycle = index + _minCycle);
-                  },
-                ),
-                 Text(
-                    'Hari',
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontSize: SizeConfig.getFontSize(22),
-                      fontWeight: FontWeight.w600,
+            // Removed Expanded and SizedBox for tighter spacing
+            Center(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  _buildPicker(
+                    initialItem: _startCycle - _minCycle,
+                    onSelectedItemChanged: (index) {
+                      setState(() => _startCycle = index + _minCycle);
+                    },
+                  ),
+                  if (!_isRegular)
+                    Row(
+                      children: [
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 8.0),
+                          child: Text("-", style: TextStyle(fontSize: 24, color: AppColors.textSecondary)),
+                        ),
+                        _buildPicker(
+                          initialItem: _endCycle - _minCycle,
+                          onSelectedItemChanged: (index) {
+                            setState(() => _endCycle = index + _minCycle);
+                          },
+                        ),
+                      ],
+                    ),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 12.0),
+                    child: Text(
+                      'Hari',
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontSize: SizeConfig.getFontSize(22),
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
-              ],
+                ],
+              ),
             ),
-            const Spacer(),
+            const Spacer(), // This pushes the button to the bottom
             Padding(
               padding: EdgeInsets.fromLTRB(SizeConfig.getWidth(5), 20, SizeConfig.getWidth(5), 35),
               child: PrimaryButton(
@@ -117,8 +130,8 @@ class _CycleLengthScreenState extends State<CycleLengthScreen> {
     required Function(int) onSelectedItemChanged,
   }) {
     return SizedBox(
-      width: SizeConfig.getWidth(30),
-      height: SizeConfig.getHeight(30),
+      width: SizeConfig.getWidth(25),
+      height: SizeConfig.getHeight(25),
       child: CupertinoPicker(
         scrollController: FixedExtentScrollController(initialItem: initialItem),
         itemExtent: 50,
@@ -129,11 +142,11 @@ class _CycleLengthScreenState extends State<CycleLengthScreen> {
             child: Text(
               '$currentDay',
               style: TextStyle(
-                color: (currentDay == _startCycle || currentDay == _endCycle)
+                color: (currentDay == _startCycle || (_isRegular == false && currentDay == _endCycle))
                     ? AppColors.primary
                     : AppColors.textSecondary,
-                fontSize: (currentDay == _startCycle || currentDay == _endCycle) ? 28 : 24,
-                fontWeight: (currentDay == _startCycle || currentDay == _endCycle)
+                fontSize: (currentDay == _startCycle || (_isRegular == false && currentDay == _endCycle)) ? 28 : 24,
+                fontWeight: (currentDay == _startCycle || (_isRegular == false && currentDay == _endCycle))
                     ? FontWeight.w600
                     : FontWeight.w400,
               ),

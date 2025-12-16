@@ -1,9 +1,9 @@
 import 'package:femora/services/cycle_data_service.dart';
 import 'package:flutter/material.dart';
 import 'package:femora/services/auth_controller.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // Ditambahkan untuk pengecekan email
 
-// 👇 Perhatikan "extends ChangeNotifier", ini kuncinya biar main.dart ga error
-class AuthProvider extends ChangeNotifier { 
+class AuthProvider extends ChangeNotifier {
   final AuthController _authController = AuthController();
   final CycleDataService _cycleDataService = CycleDataService();
 
@@ -23,7 +23,7 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // SIGN UP
+  // SIGN UP (dengan logika sinkronisasi)
   Future<bool> signUp({
     required String fullName,
     required String email,
@@ -32,20 +32,36 @@ class AuthProvider extends ChangeNotifier {
     _setLoading(true);
     _setError("");
 
-    String result = await _authController.signUp(
-      fullName: fullName,
-      email: email,
-      password: password,
-    );
+    try {
+      // 1. Cek apakah email sudah terdaftar dengan metode lain (Google, dll)
+      final signInMethods = await FirebaseAuth.instance.fetchSignInMethodsForEmail(email);
 
-    _setLoading(false);
+      if (signInMethods.isNotEmpty) {
+        // Jika email sudah ada, jangan buat akun baru. Beri pesan error.
+        _setError('Email sudah terdaftar. Silakan login atau gunakan fitur Lupa Kata Sandi.');
+        _setLoading(false);
+        return false;
+      }
 
-    if (result == "success") {
-      _cycleDataService.setFullName(fullName);
-      await _cycleDataService.finalizeData(); 
-      return true;
-    } else {
-      _setError(result);
+      // 2. Jika email belum terdaftar, lanjutkan proses pembuatan akun
+      String result = await _authController.signUp(
+        fullName: fullName,
+        email: email,
+        password: password,
+      );
+
+      _setLoading(false);
+
+      if (result == "success") {
+        _cycleDataService.setFullName(fullName);
+        return true;
+      } else {
+        _setError(_parseFirebaseError(result));
+        return false;
+      }
+    } catch (e) {
+      _setLoading(false);
+      _setError(_parseFirebaseError(e.toString()));
       return false;
     }
   }
@@ -58,22 +74,28 @@ class AuthProvider extends ChangeNotifier {
     _setLoading(true);
     _setError("");
 
-    String result = await _authController.login(
-      email: email,
-      password: password,
-    );
+    try {
+      String result = await _authController.login(
+        email: email,
+        password: password,
+      );
 
-    _setLoading(false);
+      _setLoading(false);
 
-    if (result == "success") {
-      String? userName = await _authController.getUserName();
-      if (userName != null) {
-        _cycleDataService.setFullName(userName);
+      if (result == "success") {
+        String? userName = await _authController.getUserName();
+        if (userName != null) {
+          _cycleDataService.setFullName(userName);
+        }
         await _cycleDataService.loadUserData();
+        return true;
+      } else {
+        _setError(_parseFirebaseError(result));
+        return false;
       }
-      return true;
-    } else {
-      _setError(result);
+    } catch (e) {
+      _setLoading(false);
+      _setError(_parseFirebaseError(e.toString()));
       return false;
     }
   }
@@ -83,26 +105,62 @@ class AuthProvider extends ChangeNotifier {
     _setLoading(true);
     _setError("");
 
-    String result = await _authController.signInWithGoogle();
+    try {
+      String result = await _authController.signInWithGoogle();
 
-    _setLoading(false);
+      _setLoading(false);
 
-    if (result == "success") {
-      String? userName = await _authController.getUserName();
-      if (userName != null) {
-        _cycleDataService.setFullName(userName);
+      if (result == "success") {
+        String? userName = await _authController.getUserName();
+        if (userName != null) {
+          _cycleDataService.setFullName(userName);
+        }
         await _cycleDataService.loadUserData();
+        return true;
+      } else if (result == "cancelled"){
+        _setError("Login dibatalkan.");
+        return false;
+      } else {
+        _setError(_parseFirebaseError(result));
+        return false;
       }
-      return true;
-    } else {
-      _setError(result);
+    } catch (e) {
+      _setLoading(false);
+      _setError(_parseFirebaseError(e.toString()));
       return false;
     }
   }
 
   // LOGOUT
   Future<void> logout() async {
-    await _authController.logout();
-    _cycleDataService.clearAllData(); 
+    _setLoading(true);
+    try {
+      _cycleDataService.clearAllData();
+      await _authController.logout();
+      debugPrint('✅ Logout successful');
+    } catch (e) {
+      debugPrint('❌ Error during logout: $e');
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  String _parseFirebaseError(String error) {
+    if (error.contains('email-already-in-use')) {
+      return 'Email sudah terdaftar. Silakan login atau gunakan Lupa Kata Sandi.';
+    } else if (error.contains('invalid-email')) {
+      return 'Format email tidak valid.';
+    } else if (error.contains('weak-password')) {
+      return 'Kata sandi terlalu lemah. Gunakan minimal 6 karakter.';
+    } else if (error.contains('user-not-found')) {
+      return 'Akun tidak ditemukan. Silakan daftar terlebih dahulu.';
+    } else if (error.contains('wrong-password') || error.contains('invalid-credential')) {
+      return 'Email atau kata sandi salah.';
+    } else if (error.contains('too-many-requests')) {
+      return 'Terlalu banyak percobaan. Coba lagi nanti.';
+    } else if (error.contains('network-request-failed')) {
+      return 'Tidak ada koneksi internet. Periksa koneksi Anda.';
+    }
+    return 'Terjadi kesalahan. Silakan coba lagi.'; 
   }
 }

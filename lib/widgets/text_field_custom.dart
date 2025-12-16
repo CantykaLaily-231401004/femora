@@ -6,6 +6,8 @@ class CustomTextField extends StatelessWidget {
   final String hintText;
   final IconData? icon;
   final TextInputType keyboardType;
+  final FocusNode? focusNode;
+  final Widget? suffixIcon;
 
   const CustomTextField({
     Key? key,
@@ -13,12 +15,15 @@ class CustomTextField extends StatelessWidget {
     required this.hintText,
     this.icon,
     this.keyboardType = TextInputType.text,
+    this.focusNode,
+    this.suffixIcon,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return TextField(
       controller: controller,
+      focusNode: focusNode,
       keyboardType: keyboardType,
       textAlignVertical: TextAlignVertical.center,
       decoration: InputDecoration(
@@ -30,6 +35,7 @@ class CustomTextField extends StatelessWidget {
           fontWeight: FontWeight.w400,
         ),
         prefixIcon: icon != null ? Icon(icon, color: Colors.grey, size: 20) : null,
+        suffixIcon: suffixIcon,
         contentPadding: const EdgeInsets.symmetric(vertical: 15.0, horizontal: 20.0),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(40.0),

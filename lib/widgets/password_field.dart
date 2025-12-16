@@ -4,11 +4,13 @@ import 'package:femora/config/constants.dart';
 class PasswordField extends StatefulWidget {
   final TextEditingController controller;
   final String hintText;
+  final bool enabled;
 
   const PasswordField({
     Key? key,
     required this.controller,
     this.hintText = 'Kata Sandi',
+    this.enabled = true,
   }) : super(key: key);
 
   @override
@@ -23,6 +25,7 @@ class _PasswordFieldState extends State<PasswordField> {
     return TextField(
       controller: widget.controller,
       obscureText: !_isPasswordVisible,
+      enabled: widget.enabled,
       textAlignVertical: TextAlignVertical.center,
       decoration: InputDecoration(
         hintText: widget.hintText,
@@ -56,6 +59,10 @@ class _PasswordFieldState extends State<PasswordField> {
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(40.0),
           borderSide: const BorderSide(color: AppColors.primary, width: 1.0),
+        ),
+        disabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(40.0),
+          borderSide: BorderSide(color: AppColors.borderColorDark.withOpacity(0.5), width: 1.0),
         ),
       ),
       style: const TextStyle(

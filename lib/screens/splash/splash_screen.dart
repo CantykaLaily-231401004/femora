@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -26,36 +27,70 @@ class _SplashScreenState extends State<SplashScreen> {
     // Screen 1: Gradient only
     await Future.delayed(const Duration(milliseconds: 1500));
     if (!mounted) return;
-    
+
     setState(() => _currentScreen = 1);
 
     // Screen 2: Logo + tagline (gradient bg)
     await Future.delayed(const Duration(seconds: 2));
     if (!mounted) return;
-    
+
     setState(() => _currentScreen = 2);
 
     // Screen 3: Logo + tagline (white bg)
     await Future.delayed(const Duration(seconds: 2));
     if (!mounted) return;
-    
+
     // Check authentication status and navigate
-    _checkAuthAndNavigate();
+    await _checkAuthAndNavigate();
   }
 
-  void _checkAuthAndNavigate() {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      context.go(AppRoutes.home);
-    } else {
-      context.go(AppRoutes.onboarding);
+  Future<void> _checkAuthAndNavigate() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+
+      if (user == null) {
+        // User belum login -> ke onboarding
+        if (mounted) context.go(AppRoutes.onboarding);
+        return;
+      }
+
+      // User sudah login, cek apakah sudah setup
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (!mounted) return;
+
+      if (!userDoc.exists) {
+        // Document tidak ada -> user baru dari Google Sign In
+        // Redirect ke profile setup
+        context.go(AppRoutes.profileSetup);
+        return;
+      }
+
+      final userData = userDoc.data();
+      final cycleData = userData?['cycleData'];
+
+      if (cycleData == null) {
+        // User sudah login tapi belum setup cycle data
+        context.go(AppRoutes.profileSetup);
+      } else {
+        // User sudah login dan sudah setup
+        context.go(AppRoutes.home);
+      }
+    } catch (e) {
+      debugPrint('Error checking auth: $e');
+      if (mounted) {
+        context.go(AppRoutes.onboarding);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     SizeConfig.init(context);
-    
+
     return Scaffold(
       body: AnimatedSwitcher(
         duration: AppDurations.slow,
@@ -102,7 +137,7 @@ class _SplashScreenTwo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     SizeConfig.init(context);
-    
+
     return FullGradientBackground(
       colors: const [
         Color(0xFFF7CAC9),
@@ -148,7 +183,7 @@ class _SplashScreenThree extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     SizeConfig.init(context);
-    
+
     return Container(
       color: AppColors.white,
       child: SafeArea(

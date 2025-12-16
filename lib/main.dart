@@ -3,7 +3,7 @@ import 'package:femora/config/theme.dart';
 import 'package:femora/provider/auth_provider.dart';
 import 'package:femora/services/cycle_data_service.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider; 
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -29,11 +29,11 @@ void main() async {
   // Setup Listener Auth State
   FirebaseAuth.instance.authStateChanges().listen((User? user) {
     if (user == null) {
-      debugPrint("User Logout: Clearing Data...");
-      cycleDataService.clearAllData(); 
+      debugPrint("🚪 User Logout: Clearing Data...");
+      cycleDataService.clearAllData();
     } else {
-      debugPrint("User Login: Loading Data for ${user.uid}...");
-      cycleDataService.loadUserData(); 
+      debugPrint("👋 User Login: ${user.email} (${user.uid})");
+      // Load data akan dipanggil dari SplashScreen atau setelah login
     }
   });
 
