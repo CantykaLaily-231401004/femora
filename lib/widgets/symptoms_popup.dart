@@ -8,7 +8,6 @@ class SymptomsPopup extends StatefulWidget {
   final String initialMood;
   final bool isMenstruating;
 
-  // Tambahkan parameter agar data nyambung dari mood popup
   const SymptomsPopup({
     Key? key, 
     required this.initialMood,
@@ -35,7 +34,6 @@ class _SymptomsPopupState extends State<SymptomsPopup> {
         .map((entry) => entry.key)
         .toList();
 
-    // --- LOGIKA PENYIMPANAN KE FIREBASE ---
     final service = CycleDataService();
     final userId = service.userId;
 
@@ -48,17 +46,18 @@ class _SymptomsPopupState extends State<SymptomsPopup> {
         id: id,
         userId: userId,
         date: now,
-        mood: widget.initialMood, // Ambil dari yang dilempar mood popup
+        mood: widget.initialMood,
         symptoms: selectedSymptoms,
         isMenstruation: widget.isMenstruating,
       );
 
       await service.saveDailyLog(log);
     }
-    // --------------------------------------
 
     if (mounted) {
       Navigator.of(context).pop();
+      
+      await Future.delayed(const Duration(milliseconds: 50));
 
       showModalBottomSheet(
         context: context,
@@ -129,9 +128,14 @@ class _SymptomsPopupState extends State<SymptomsPopup> {
                 ),
               ),
               const SizedBox(height: 24),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: _symptoms.keys.map((symptom) => _buildSymptomItem(symptom)).toList(),
+              // Make the list of symptoms scrollable
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: _symptoms.keys.map((symptom) => _buildSymptomItem(symptom)).toList(),
+                  ),
+                ),
               ),
               const SizedBox(height: 24),
               ElevatedButton(

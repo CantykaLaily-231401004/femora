@@ -1,3 +1,4 @@
+import 'package:femora/widgets/music_player_popup.dart';
 import 'package:flutter/material.dart';
 
 class SymptomRecommendationsPopup extends StatelessWidget {
@@ -14,6 +15,24 @@ class SymptomRecommendationsPopup extends StatelessWidget {
         'Kembung': '✅ Hindari makanan tinggi garam',
       };
 
+  void _handleMusicChoice(BuildContext context, bool playMusic) {
+    Navigator.of(context).pop(); // Close the recommendations popup
+
+    if (playMusic) {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        isDismissible: true,
+        backgroundColor: Colors.transparent,
+        builder: (BuildContext context) {
+          return const MusicPlayerPopup();
+        },
+      );
+    } else {
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final applicableRecommendations = selectedSymptoms
@@ -22,7 +41,9 @@ class SymptomRecommendationsPopup extends StatelessWidget {
         .toList();
 
     return Container(
-      height: 476,
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.85,
+      ),
       decoration: const BoxDecoration(
         color: Color(0xFFFDEBD0),
         borderRadius: BorderRadius.only(
@@ -32,52 +53,44 @@ class SymptomRecommendationsPopup extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(32, 48, 32, 220), // Space for bottom buttons
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+          SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(32, 48, 32, 220),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Center(
+                  child: Text(
+                    'Rekomendasi Untukmu 💖',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Color(0xFFF75270), fontSize: 24, fontFamily: 'Poppins', fontWeight: FontWeight.w700),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  'Berdasarkan kondisimu:',
+                  style: TextStyle(color: Color(0xFFF75270), fontSize: 18, fontFamily: 'Poppins', fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(height: 16),
+                if (applicableRecommendations.isNotEmpty)
+                  ...applicableRecommendations.map(
+                    (rec) => Padding(
+                      padding: const EdgeInsets.only(bottom: 8.0),
+                      child: Text(rec!, style: const TextStyle(color: Color(0xFFF75270), fontSize: 18, fontFamily: 'Poppins', fontWeight: FontWeight.w400)),
+                    ),
+                  )
+                else
                   const Center(
-                    child: Text(
-                      'Rekomendasi Untukmu 💖',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Color(0xFFF75270),
-                        fontSize: 24,
-                        fontFamily: 'Poppins',
-                        fontWeight: FontWeight.w700,
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 20.0),
+                      child: Text(
+                        'Tidak ada gejala spesifik, \nikuti rekomendasi umum ya!',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Color(0xFFF75270), fontSize: 18, fontFamily: 'Poppins'),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'Berdasarkan kondisimu:',
-                    style: TextStyle(
-                      color: Color(0xFFF75270),
-                      fontSize: 18,
-                      fontFamily: 'Poppins',
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  if (applicableRecommendations.isNotEmpty)
-                    ...applicableRecommendations.map(
-                      (rec) => Padding(
-                        padding: const EdgeInsets.only(bottom: 8.0),
-                        child: Text(
-                          rec!,
-                          style: const TextStyle(
-                            color: Color(0xFFF75270),
-                            fontSize: 18,
-                            fontFamily: 'Poppins',
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
+              ],
             ),
           ),
           Positioned(
@@ -86,74 +99,18 @@ class SymptomRecommendationsPopup extends StatelessWidget {
             bottom: 32,
             child: Column(
               children: [
-                const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      '🎵 ',
-                      style: TextStyle(fontSize: 24),
-                    ),
-                    Text(
-                      'Putar Musik Relaksasi?',
-                      style: TextStyle(
-                        color: Color(0xFFF75270),
-                        fontSize: 18,
-                        fontFamily: 'Poppins',
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
+                const Row(mainAxisAlignment: MainAxisAlignment.center, children: [Text('🎵 ', style: TextStyle(fontSize: 24)), Text('Putar Musik Relaksasi?', style: TextStyle(color: Color(0xFFF75270), fontSize: 18, fontFamily: 'Poppins', fontWeight: FontWeight.w500))]),
                 const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFF75270),
-                    minimumSize: const Size(double.infinity, 52),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(40),
-                    ),
-                  ),
-                  child: const Text(
-                    'Iya',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontFamily: 'Poppins',
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
+                ElevatedButton(onPressed: () => _handleMusicChoice(context, true), style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFF75270), minimumSize: const Size(double.infinity, 52), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40))), child: const Text('Iya', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600))),
                 const SizedBox(height: 10),
-                ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    minimumSize: const Size(double.infinity, 52),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(40),
-                    ),
-                  ),
-                  child: const Text(
-                    'Tidak',
-                    style: TextStyle(
-                      color: Color(0xFFF75270),
-                      fontSize: 18,
-                      fontFamily: 'Poppins',
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
+                ElevatedButton(onPressed: () => _handleMusicChoice(context, false), style: ElevatedButton.styleFrom(backgroundColor: Colors.white, minimumSize: const Size(double.infinity, 52), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40))), child: const Text('Tidak', style: TextStyle(color: Color(0xFFF75270), fontSize: 18, fontWeight: FontWeight.w600))),
               ],
             ),
           ),
           Positioned(
             top: 16,
             right: 16,
-            child: IconButton(
-              icon: const Icon(Icons.close, color: Color(0xFFF75270)),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
+            child: IconButton(icon: const Icon(Icons.close, color: Color(0xFFF75270)), onPressed: () => Navigator.of(context).popUntil((route) => route.isFirst)),
           ),
         ],
       ),

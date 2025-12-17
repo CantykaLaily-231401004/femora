@@ -1,6 +1,6 @@
 import 'package:femora/models/daily_log_model.dart';
 import 'package:femora/services/cycle_data_service.dart';
-import 'package:femora/widgets/recommendation_popup.dart';
+import 'package:femora/widgets/symptom_recommendations_popup.dart';
 import 'package:femora/widgets/symptoms_popup.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -16,10 +16,10 @@ class MoodCheckinPopup extends StatelessWidget {
   void _handleMoodSelection(BuildContext context, bool isHappy) async {
     final cycleDataService = CycleDataService();
     final String mood = isHappy ? 'Baik' : 'Buruk';
-    
-    Navigator.of(context).pop(); // Tutup popup mood
 
-    // Skenario 1: Menstruasi & Sedih -> Lanjut tanya Gejala
+    Navigator.of(context).pop();
+    await Future.delayed(const Duration(milliseconds: 50));
+
     if (isMenstruating && !isHappy) {
       showModalBottomSheet(
         context: context,
@@ -27,70 +27,36 @@ class MoodCheckinPopup extends StatelessWidget {
         isDismissible: false,
         enableDrag: false,
         backgroundColor: Colors.transparent,
-        builder: (BuildContext context) {
-          // Oper data mood ke popup gejala biar sekalian disimpan nanti
-          return SymptomsPopup(
-            initialMood: mood,
-            isMenstruating: isMenstruating,
-          );
-        },
+        builder: (newContext) => SymptomsPopup(
+          initialMood: mood,
+          isMenstruating: isMenstruating,
+        ),
       );
-      return;
-    }
-
-    // Skenario 2: Happy atau Tidak Menstruasi -> Simpan Langsung
-    final userId = cycleDataService.userId;
-    if (userId != null) {
-      final now = DateTime.now();
-      final dateId = DateFormat('yyyyMMdd').format(now);
-      final id = '${userId}_$dateId';
-
-      final log = DailyLogModel(
-        id: id,
-        userId: userId,
-        date: now,
-        mood: mood,
-        symptoms: [], // Kosong karena tidak isi gejala
-        isMenstruation: isMenstruating,
-      );
-
-      await cycleDataService.saveDailyLog(log);
-    }
-
-    // Tampilkan Rekomendasi
-    String header;
-    String message;
-    String? imageName;
-
-    if (isMenstruating) {
-      header = 'Horeee!';
-      message = 'Lagi menstruasi tapi tetap ceria! ✨\nJangan lupa minum air hangat ya! 💧';
-      imageName = 'fase_menstruasi.png'; // Pastikan nama file aset sesuai
     } else {
-      if (isHappy) {
-        header = 'Keren!';
-        message = 'Harimu luar biasa! 🎉\nSebarkan energi positifmu✨';
-        imageName = 'happy_emoji.png';
-      } else {
-        header = 'Lagi nggak menstruasi, \ntapi lagi down ya?';
-        message = 'Tetap semangat! 💪 \nKamu pasti bisa!';
-        imageName = 'sad_emoji.png';
-      }
-    }
+      final userId = cycleDataService.userId;
+      if (userId != null) {
+        final now = DateTime.now();
+        final dateId = DateFormat('yyyyMMdd').format(now);
+        final id = '${userId}_$dateId';
 
-    if (context.mounted) {
+        final log = DailyLogModel(
+          id: id,
+          userId: userId,
+          date: now,
+          mood: mood,
+          symptoms: [],
+          isMenstruation: isMenstruating,
+        );
+
+        await cycleDataService.saveDailyLog(log);
+      }
+      
       showModalBottomSheet(
         context: context,
         isScrollControlled: true,
         isDismissible: true,
         backgroundColor: Colors.transparent,
-        builder: (BuildContext context) {
-          return RecommendationPopup(
-            header: header,
-            message: message,
-            imageName: imageName,
-          );
-        },
+        builder: (newContext) => const SymptomRecommendationsPopup(selectedSymptoms: []), // Pass empty list
       );
     }
   }

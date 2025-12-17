@@ -88,8 +88,6 @@ class AppRouter {
       redirect: (BuildContext context, GoRouterState state) async {
         final location = state.matchedLocation;
 
-        // Biarkan splash screen selalu ditampilkan. Navigasi dari splash screen
-        // akan ditangani di dalam widget SplashScreen itu sendiri.
         if (location == AppRoutes.splash) {
           return null;
         }
@@ -109,27 +107,20 @@ class AppRouter {
         ];
         final isPublicRoute = unprotectedRoutes.contains(location);
 
-        // Jika pengguna tidak login dan mencoba mengakses rute yang dilindungi, arahkan ke login.
         if (!loggedIn && !isPublicRoute) {
           return AppRoutes.login;
         }
 
-        // Jika pengguna sudah login.
         if (loggedIn) {
           final isAtAuthFlow = location == AppRoutes.login || location == AppRoutes.onboarding || location == AppRoutes.register;
-          // Jika pengguna mencoba mengakses halaman login/onboarding, arahkan sesuai status onboarding.
           if (isAtAuthFlow) {
              return onboardingComplete ? AppRoutes.home : AppRoutes.profileSetup;
           }
         }
 
-        // Jika tidak ada kondisi di atas yang terpenuhi, jangan lakukan pengalihan.
         return null;
       },
       routes: [
-        // ============================================
-        // AUTH & ONBOARDING ROUTES
-        // ============================================
         GoRoute(
           path: AppRoutes.splash,
           builder: (context, state) => const SplashScreen(),
@@ -165,10 +156,6 @@ class AppRouter {
           path: AppRoutes.passwordSuccess,
           builder: (context, state) => const PasswordSuccessScreen(),
         ),
-
-        // ============================================
-        // SETUP ROUTES
-        // ============================================
         GoRoute(
           path: AppRoutes.profileSetup,
           builder: (context, state) => const ProfileSetupScreen(),
@@ -196,10 +183,6 @@ class AppRouter {
           path: AppRoutes.setupLoading,
           builder: (context, state) => const SetupLoadingScreen(),
         ),
-
-        // ============================================
-        // HISTORY & CYCLE ROUTES
-        // ============================================
         GoRoute(
           path: AppRoutes.history,
           name: 'history',
@@ -228,10 +211,6 @@ class AppRouter {
           path: AppRoutes.editCycle,
           builder: (context, state) => const EditCycleScreen(),
         ),
-
-        // ============================================
-        // PROFILE SETTINGS ROUTES
-        // ============================================
         GoRoute(
           path: AppRoutes.alarm,
           builder: (context, state) => const AlarmScreen(),
@@ -254,26 +233,22 @@ class AppRouter {
           path: AppRoutes.help,
           builder: (context, state) => const HelpScreen(),
         ),
-
-        // ============================================
-        // MAIN APP ROUTES (With Shared UI & NavBar)
-        // ============================================
         ShellRoute(
           builder: (context, state, child) {
             return ScaffoldWithSharedUI(child: child);
           },
           routes: [
             GoRoute(
-              path: AppRoutes.home,
-              builder: (context, state) => const HomeScreen(),
+                path: AppRoutes.home,
+                builder: (context, state) => const SizedBox(),
             ),
             GoRoute(
-              path: AppRoutes.edukasi,
-              builder: (context, state) => const EducationScreen(),
+                path: AppRoutes.edukasi,
+                builder: (context, state) => const SizedBox(),
             ),
             GoRoute(
-              path: AppRoutes.profile,
-              builder: (context, state) => const ProfileScreen(),
+                path: AppRoutes.profile,
+                builder: (context, state) => const SizedBox(),
             ),
           ],
         ),
@@ -282,46 +257,90 @@ class AppRouter {
   }
 }
 
-// ============================================
-// SHARED UI WRAPPER
-// ============================================
-class ScaffoldWithSharedUI extends StatelessWidget {
+class ScaffoldWithSharedUI extends StatefulWidget {
   const ScaffoldWithSharedUI({required this.child, super.key});
   final Widget child;
 
   @override
+  State<ScaffoldWithSharedUI> createState() => _ScaffoldWithSharedUIState();
+}
+
+class _ScaffoldWithSharedUIState extends State<ScaffoldWithSharedUI> {
+  late PageController _pageController;
+  int _currentIndex = 1; // Default to home
+
+  static const _screens = [
+    EducationScreen(),
+    HomeScreen(),
+    ProfileScreen(),
+  ];
+
+  static const _navItems = [
+    BottomNavItem(icon: Icons.book_outlined, route: AppRoutes.edukasi),
+    BottomNavItem(icon: Icons.home_outlined, route: AppRoutes.home),
+    BottomNavItem(icon: Icons.person_outline, route: AppRoutes.profile),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize with a default page. didChangeDependencies will correct it.
+    _pageController = PageController(initialPage: _currentIndex);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Sync the PageView with the current route.
+    final newIndex = _calculateCurrentIndex();
+    if (_currentIndex != newIndex) {
+      setState(() {
+        _currentIndex = newIndex;
+      });
+      // Use jumpToPage to prevent animation on initial load or deep link.
+      _pageController.jumpToPage(newIndex);
+    }
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  int _calculateCurrentIndex() {
+    final location = GoRouterState.of(context).uri.toString();
+    // The order is Edukasi (0), Home (1), Profile (2)
+    final index = _navItems.indexWhere((item) => location.startsWith(item.route));
+    return index == -1 ? 1 : index; // Default to home (index 1)
+  }
+
+  void _onPageChanged(int index) {
+    if (_currentIndex != index) {
+      // This is triggered by a swipe gesture. Navigate to the new route.
+      context.go(_navItems[index].route);
+    }
+  }
+
+  void _onNavBarTapped(int index) {
+    // This is triggered by a tap on the nav bar. Animate to the new page.
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     SizeConfig.init(context);
-
-    const navItems = [
-      BottomNavItem(icon: Icons.book_outlined, route: AppRoutes.edukasi),
-      BottomNavItem(icon: Icons.home_outlined, route: AppRoutes.home),
-      BottomNavItem(icon: Icons.person_outline, route: AppRoutes.profile),
-    ];
-
-    int getCurrentIndex() {
-      final location = GoRouterState.of(context).uri.toString();
-      if (location.startsWith(AppRoutes.edukasi)) return 0;
-      if (location.startsWith(AppRoutes.home)) return 1;
-      if (location.startsWith(AppRoutes.profile)) return 2;
-      return 1; // default to home
-    }
-
-    void onNavBarTapped(int index) {
-      context.go(navItems[index].route);
-    }
-
-    final currentIndex = getCurrentIndex();
     final cycleDataService = Provider.of<CycleDataService>(context);
 
     return Scaffold(
       backgroundColor: AppColors.white,
       body: Stack(
         children: [
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
+          Positioned.fill(
             child: GradientBackground(
               height: SizeConfig.getHeight(40),
               borderRadius: const BorderRadius.only(
@@ -340,7 +359,13 @@ class ScaffoldWithSharedUI extends StatelessWidget {
                     userNameNotifier: cycleDataService.userNameNotifier,
                   ),
                 ),
-                Expanded(child: child),
+                Expanded(
+                  child: PageView(
+                    controller: _pageController,
+                    onPageChanged: _onPageChanged,
+                    children: _screens,
+                  ),
+                ),
               ],
             ),
           ),
@@ -350,9 +375,9 @@ class ScaffoldWithSharedUI extends StatelessWidget {
             right: 0,
             child: Center(
               child: CustomBottomNavBar(
-                currentIndex: currentIndex,
-                onTap: onNavBarTapped,
-                items: navItems,
+                currentIndex: _currentIndex,
+                onTap: _onNavBarTapped,
+                items: _navItems,
               ),
             ),
           ),
@@ -362,7 +387,6 @@ class ScaffoldWithSharedUI extends StatelessWidget {
   }
 }
 
-// Helper class to bridge Stream and ChangeNotifier for GoRouter
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
     notifyListeners();
