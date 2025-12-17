@@ -2,7 +2,6 @@ import 'package:femora/config/routes.dart';
 import 'package:femora/logic/cycle_phase_logic.dart';
 import 'package:femora/logic/prediction_logic.dart';
 import 'package:femora/logic/menstruation_tracking_logic.dart';
-import 'package:femora/models/cycle_data.dart';
 import 'package:femora/services/cycle_data_service.dart';
 import 'package:femora/widgets/cycle_phase_card.dart';
 import 'package:femora/widgets/home_calendar_card.dart';
@@ -28,6 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
   
   Map<DateTime, bool> _menstruationMarkers = {};
   CyclePrediction? _dynamicPrediction;
+  bool? _isCurrentlyMenstruating; // Status menstruasi hari ini
 
   @override
   void initState() {
@@ -36,7 +36,9 @@ class _HomeScreenState extends State<HomeScreen> {
     _focusedDay = now;
     _selectedDay = now;
 
+    // Listen to data changes
     _cycleDataService.dailyMoodNotifier.addListener(_onDataChanged);
+    _cycleDataService.cycleDataNotifier.addListener(_onDataChanged);
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await _loadAllData();
@@ -46,63 +48,86 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _cycleDataService.dailyMoodNotifier.removeListener(_onDataChanged);
+    _cycleDataService.cycleDataNotifier.removeListener(_onDataChanged);
     super.dispose();
   }
 
   void _onDataChanged() {
-    if (mounted) setState(() {});
-  }
-
-  // ✅ FIX: Alur data diperbaiki menjadi sekuensial dan atomik
-  Future<void> _loadAllData() async {
-    // 1. Muat data dasar (durasi siklus, dll)
-    await _cycleDataService.loadUserData();
-    if (!mounted) return;
-
-    // 2. Muat data pendukung
-    await _cycleDataService.loadMoodsForMonth(_focusedDay);
-    final newMarkers = await _loadMenstruationMarkers(_focusedDay);
-
-    // 3. Hitung prediksi baru berdasarkan data terbaru
-    final newPrediction = await _updateDynamicPrediction();
-
-    // 4. Panggil setState SATU KALI dengan semua data baru
     if (mounted) {
-      setState(() {
-        _menstruationMarkers = newMarkers;
-        _dynamicPrediction = newPrediction;
-      });
+      debugPrint('🔄 Data changed, reloading...');
+      _loadAllData();
     }
   }
 
-  // ✅ FIX: Fungsi sekarang mengembalikan nilai, tidak memanggil setState
+  Future<void> _loadAllData() async {
+    debugPrint('📥 Loading all data...');
+    
+    await _cycleDataService.loadUserData();
+    if (!mounted) return;
+
+    final isMenstruating = await _trackingLogic.isCurrentlyMenstruating();
+    final newMarkers = await _loadMenstruationMarkers(_focusedDay);
+    await _cycleDataService.loadMoodsForMonth(_focusedDay);
+    final newPrediction = await _updateDynamicPrediction();
+
+    if (mounted) {
+      setState(() {
+        _isCurrentlyMenstruating = isMenstruating;
+        _menstruationMarkers = newMarkers;
+        _dynamicPrediction = newPrediction;
+      });
+      
+      debugPrint('✅ All data loaded successfully');
+    }
+  }
+
   Future<CyclePrediction?> _updateDynamicPrediction() async {
+    final userId = _cycleDataService.userId;
+    if (userId == null) return null;
+
     final initialCycleData = _cycleDataService.cycleDataNotifier.value;
     if (initialCycleData == null) return null;
 
-    final mostRecentStart = await _trackingLogic.getMostRecentPeriodStartDate();
-    final baseDate = mostRecentStart ?? initialCycleData.lastPeriodStart;
+    try {
+      final prediction = await CyclePrediction.fromHistoricalData(
+        userId: userId,
+        defaultPeriodDuration: initialCycleData.periodDuration,
+        defaultMinCycle: initialCycleData.minCycleLength,
+        defaultMaxCycle: initialCycleData.maxCycleLength,
+        defaultIsRegular: initialCycleData.isRegular,
+      );
 
-    return CyclePrediction(
-      lastPeriodStart: baseDate,
-      periodDuration: initialCycleData.periodDuration,
-      minCycleLength: initialCycleData.minCycleLength,
-      maxCycleLength: initialCycleData.maxCycleLength,
-      isRegular: initialCycleData.isRegular,
-    );
+      debugPrint('🔮 Prediction updated');
+      return prediction;
+    } catch (e) {
+      debugPrint('❌ Error updating prediction: $e');
+      final mostRecentStart = await _trackingLogic.getMostRecentPeriodStartDate();
+      final baseDate = mostRecentStart ?? initialCycleData.lastPeriodStart;
+
+      return CyclePrediction(
+        lastPeriodStart: baseDate,
+        periodDuration: initialCycleData.periodDuration,
+        minCycleLength: initialCycleData.minCycleLength,
+        maxCycleLength: initialCycleData.maxCycleLength,
+        isRegular: initialCycleData.isRegular,
+      );
+    }
   }
 
-  // ✅ FIX: Fungsi sekarang mengembalikan nilai, tidak memanggil setState
   Future<Map<DateTime, bool>> _loadMenstruationMarkers(DateTime month) async {
     final startOfMonth = DateTime(month.year, month.month, 1);
     final endOfMonth = DateTime(month.year, month.month + 1, 0);
     final markers = <DateTime, bool>{};
-    for (var day = startOfMonth; day.isBefore(endOfMonth.add(const Duration(days: 1))); day = day.add(const Duration(days: 1))) {
+    
+    for (var day = startOfMonth; 
+         day.isBefore(endOfMonth.add(const Duration(days: 1))); 
+         day = day.add(const Duration(days: 1))) {
       final isMens = await _trackingLogic.isMenstruationDay(day);
       if (isMens) {
         markers[DateTime(day.year, day.month, day.day)] = true;
       }
     }
+    
     return markers;
   }
 
@@ -118,7 +143,10 @@ class _HomeScreenState extends State<HomeScreen> {
     if (isMens) {
       return Container(
         margin: const EdgeInsets.all(4.0),
-        decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
+        decoration: const BoxDecoration(
+          color: AppColors.primary, 
+          shape: BoxShape.circle
+        ),
       );
     }
     return null;
@@ -130,15 +158,20 @@ class _HomeScreenState extends State<HomeScreen> {
       _focusedDay = focusedDay;
     });
 
-    final isToday = DateTime.now().difference(selectedDay).inDays == 0 && DateTime.now().day == selectedDay.day;
+    final isToday = DateTime.now().difference(selectedDay).inDays == 0 && 
+                    DateTime.now().day == selectedDay.day;
+    
     if (isToday && _cycleDataService.getMoodForDay(selectedDay) != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Kamu sudah melakukan check-in hari ini! 😊'), backgroundColor: Color(0xFFF75270)),
+        const SnackBar(
+          content: Text('Kamu sudah melakukan check-in hari ini! 😊'), 
+          backgroundColor: Color(0xFFF75270)
+        ),
       );
       return;
     }
 
-    if(isToday){
+    if (isToday) {
       showModalBottomSheet(
         context: context,
         isScrollControlled: true,
@@ -147,13 +180,39 @@ class _HomeScreenState extends State<HomeScreen> {
         useRootNavigator: true,
         backgroundColor: Colors.transparent,
         builder: (context) => const MenstruationQuestionPopup(),
-      ).then((_) => _loadAllData());
+      ).then((_) {
+        debugPrint('🔄 Checkin completed, reloading data...');
+        _loadAllData();
+      });
     } else {
-      context.push(AppRoutes.cycleEdit, extra: selectedDay);
+      context.push(AppRoutes.cycleEdit, extra: selectedDay).then((_) {
+        debugPrint('🔄 Cycle edited, reloading data...');
+        _loadAllData();
+      });
     }
   }
+  
+  void _onPageChanged(DateTime focusedDay) {
+    setState(() {
+      _focusedDay = focusedDay;
+    });
+    // Load data for the new month
+    _cycleDataService.loadMoodsForMonth(focusedDay);
+    _loadMenstruationMarkers(focusedDay).then((newMarkers) {
+      if(mounted) {
+        setState(() {
+          _menstruationMarkers = newMarkers;
+        });
+      }
+    });
+  }
 
-  void _onEditCycle() => context.push(AppRoutes.cycleEdit, extra: DateTime.now());
+  void _onEditCycle() {
+    context.push(AppRoutes.cycleEdit, extra: DateTime.now()).then((_) {
+      debugPrint('🔄 Cycle edited, reloading data...');
+      _loadAllData();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -170,23 +229,30 @@ class _HomeScreenState extends State<HomeScreen> {
                 focusedDay: _focusedDay,
                 selectedDay: _selectedDay,
                 onDaySelected: _onDaySelected,
+                onPageChanged: _onPageChanged,
                 onEditCycle: _onEditCycle,
                 prediction: _dynamicPrediction!,
                 getMoodForDay: _getMoodEmoji,
                 getMenstruationMarker: _buildMenstruationMarker,
               )
             else
-              const SizedBox(height: 350, child: Center(child: CircularProgressIndicator(color: AppColors.primary))),
-
+              const SizedBox(
+                height: 350,
+                child: Center(
+                    child: CircularProgressIndicator(color: AppColors.primary)),
+              ),
             const SizedBox(height: 25),
-            
             if (_dynamicPrediction != null)
               CyclePhaseCard(
-                data: CyclePhaseLogic.getDynamicPhaseData(_dynamicPrediction!, DateTime.now()),
+                data: CyclePhaseLogic.getDynamicPhaseData(
+                  _dynamicPrediction!,
+                  DateTime.now(),
+                  isCurrentlyMenstruating: _isCurrentlyMenstruating,
+                ),
               )
             else
-              const Center(child: CircularProgressIndicator(color: AppColors.primary)),
-
+              const Center(
+                  child: CircularProgressIndicator(color: AppColors.primary)),
             const SizedBox(height: 120),
           ],
         ),

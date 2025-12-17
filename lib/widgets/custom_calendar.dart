@@ -8,6 +8,7 @@ class CustomCalendar extends StatelessWidget {
   final DateTime focusedDay;
   final DateTime? selectedDay;
   final Function(DateTime, DateTime) onDaySelected;
+  final Function(DateTime) onPageChanged;
   final CalendarFormat calendarFormat;
   final Function(CalendarFormat)? onFormatChanged;
   final bool isTodayCheckedIn;
@@ -21,6 +22,7 @@ class CustomCalendar extends StatelessWidget {
     required this.focusedDay,
     this.selectedDay,
     required this.onDaySelected,
+    required this.onPageChanged,
     this.calendarFormat = CalendarFormat.month,
     this.onFormatChanged,
     this.isTodayCheckedIn = false,
@@ -54,8 +56,10 @@ class CustomCalendar extends StatelessWidget {
         focusedDay: focusedDay,
         calendarFormat: calendarFormat,
         onDaySelected: onDaySelected,
+        onPageChanged: onPageChanged,
         onFormatChanged: onFormatChanged,
         selectedDayPredicate: (day) => isSameDay(DateTime.now(), day),
+        availableGestures: AvailableGestures.horizontalSwipe,
         calendarBuilders: CalendarBuilders(
           markerBuilder: (context, day, events) {
             final mood = getMoodForDay(day);
@@ -69,7 +73,6 @@ class CustomCalendar extends StatelessWidget {
             return null;
           },
           prioritizedBuilder: (context, day, focusedDay) {
-            // Prioritas 1: Marker Menstruasi Aktual (dari check-in)
             final actualMenstruationMarker = getMenstruationMarker?.call(day);
             if (actualMenstruationMarker != null) {
               return Stack(
@@ -81,16 +84,14 @@ class CustomCalendar extends StatelessWidget {
               );
             }
 
-            // Prioritas 2: Prediksi dan Menstruasi Terakhir dari Setup Awal
             if (prediction != null) {
-              // Gambar menstruasi terakhir (dari setup)
               final lastPeriodEnd = prediction!.lastPeriodStart.add(Duration(days: prediction!.periodDuration - 1));
               if (!day.isBefore(prediction!.lastPeriodStart) && !day.isAfter(lastPeriodEnd)) {
                 return Container(
                   margin: const EdgeInsets.all(4.0),
                   alignment: Alignment.center,
                   decoration: const BoxDecoration(
-                    color: AppColors.primary, // Merah solid untuk data histori
+                    color: AppColors.primary,
                     shape: BoxShape.circle,
                   ),
                   child: Text(
@@ -100,14 +101,13 @@ class CustomCalendar extends StatelessWidget {
                 );
               }
 
-              // Gambar prediksi periode berikutnya
               if (prediction!.predictedPeriodStart != null && prediction!.predictedPeriodEnd != null) {
                 if (!day.isBefore(prediction!.predictedPeriodStart!) && !day.isAfter(prediction!.predictedPeriodEnd!)) {
                   return Container(
                     margin: const EdgeInsets.all(4.0),
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.4), // Pink transparan untuk prediksi
+                      color: AppColors.primary.withOpacity(0.4),
                       shape: BoxShape.circle,
                     ),
                     child: Text(
@@ -119,7 +119,6 @@ class CustomCalendar extends StatelessWidget {
               }
             }
 
-            // Prioritas 3: Hari Ini (jika bukan hari menstruasi atau prediksi)
             if (isSameDay(day, DateTime.now())) {
               return Center(
                 child: Text(
@@ -132,7 +131,7 @@ class CustomCalendar extends StatelessWidget {
               );
             }
 
-            return null; // Tampilan default
+            return null;
           },
         ),
         headerStyle: HeaderStyle(

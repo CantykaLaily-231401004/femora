@@ -1,7 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:femora/logic/menstruation_tracking_logic.dart';
 import 'package:femora/models/daily_log_model.dart';
 import 'package:femora/services/cycle_data_service.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // Butuh untuk cek creationTime
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:femora/config/constants.dart';
@@ -10,25 +11,28 @@ import 'package:femora/widgets/primary_button.dart';
 import 'package:femora/widgets/size_config.dart';
 import 'package:intl/intl.dart';
 
-// --- Data Models UI ---
+// Data Models
 class DailyCycleData {
   Set<String> symptoms; 
   String selectedMood;
   bool isModified; 
+  bool isMenstruating; // ✅ TAMBAHAN: Status menstruasi
 
   DailyCycleData({
     required this.symptoms,
     required this.selectedMood,
     this.isModified = false,
+    this.isMenstruating = false,
   });
 
   factory DailyCycleData.initial() => DailyCycleData(
         symptoms: {},
         selectedMood: 'Baik',
+        isMenstruating: false,
       );
 }
 
-// Data Options Gejala
+// Data Options
 final List<Map<String, String>> symptomOptions = [
   {'label': 'Mood Swing', 'path': AppAssets.moodSwing},
   {'label': 'Kembung', 'path': AppAssets.kembung},
@@ -51,28 +55,25 @@ class _CycleEditScreenState extends State<CycleEditScreen> {
   late DateTime _selectedDate;
   late DailyCycleData _currentData;
   final CycleDataService _cycleDataService = CycleDataService();
+  final MenstruationTrackingLogic _trackingLogic = MenstruationTrackingLogic();
   bool _isLoading = false;
   
-  // Tanggal user daftar
   late DateTime _registrationDate;
 
   @override
   void initState() {
     super.initState();
     
-    // Set tanggal awal dari parameter
     if (widget.extra is DateTime) {
       _selectedDate = widget.extra as DateTime;
     } else {
       _selectedDate = DateTime.now();
     }
 
-    // Ambil tanggal registrasi dari Firebase Auth
     final user = FirebaseAuth.instance.currentUser;
     if (user != null && user.metadata.creationTime != null) {
       _registrationDate = user.metadata.creationTime!;
     } else {
-      // Fallback jika tidak ada data (misal 1 tahun lalu)
       _registrationDate = DateTime.now().subtract(const Duration(days: 365));
     }
     
@@ -86,6 +87,7 @@ class _CycleEditScreenState extends State<CycleEditScreen> {
     if (userId == null) return;
 
     try {
+      // Load daily log data
       final start = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
       final end = start.add(const Duration(days: 1));
 
@@ -96,18 +98,25 @@ class _CycleEditScreenState extends State<CycleEditScreen> {
           .where('date', isLessThan: Timestamp.fromDate(end))
           .get();
 
+      // ✅ CEK STATUS MENSTRUASI DARI TRACKING LOGIC
+      final isMenstruating = await _trackingLogic.isMenstruationDay(_selectedDate);
+
       if (snapshot.docs.isNotEmpty) {
         final log = DailyLogModel.fromFirestore(snapshot.docs.first);
         setState(() {
           _currentData = DailyCycleData(
             symptoms: log.symptoms.toSet(),
             selectedMood: log.mood,
+            isMenstruating: isMenstruating,
           );
         });
       } else {
-        // Reset jika tidak ada data di tanggal itu
         setState(() {
-          _currentData = DailyCycleData.initial();
+          _currentData = DailyCycleData(
+            symptoms: {},
+            selectedMood: 'Baik',
+            isMenstruating: isMenstruating,
+          );
         });
       }
     } catch (e) {
@@ -117,6 +126,7 @@ class _CycleEditScreenState extends State<CycleEditScreen> {
     }
   }
 
+  /// ✅ SAVE CHANGES - Termasuk Status Menstruasi
   void _saveChanges() async {
     final userId = _cycleDataService.userId;
     if (userId == null) return;
@@ -128,6 +138,7 @@ class _CycleEditScreenState extends State<CycleEditScreen> {
     );
 
     try {
+      // 1. Simpan Daily Log
       final dateId = DateFormat('yyyyMMdd').format(_selectedDate);
       final id = '${userId}_$dateId';
 
@@ -137,42 +148,47 @@ class _CycleEditScreenState extends State<CycleEditScreen> {
         date: _selectedDate,
         mood: _currentData.selectedMood,
         symptoms: _currentData.symptoms.toList(),
-        isMenstruation: false, 
+        isMenstruation: _currentData.isMenstruating,
       );
 
       await _cycleDataService.saveDailyLog(log);
       
+      // 2. ✅ UPDATE MENSTRUATION TRACKING
+      await _trackingLogic.updateMenstruationStatus(
+        checkInDate: _selectedDate,
+        isMenstruating: _currentData.isMenstruating,
+      );
+      
+      debugPrint('✅ Menstruation status updated for ${_selectedDate.toString().split(' ')[0]}');
+      
       if (mounted) {
         Navigator.pop(context); // Tutup loading
-        context.pop(); // Kembali
+        context.pop(); // Kembali ke home
       }
     } catch (e) {
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal: $e'))
+        );
       }
     }
   }
 
-  // --- WIDGETS ---
-
-  // 1. Date Strip (7 Hari)
   Widget _buildDateStrip() {
     final today = DateTime.now();
-    // Generate 7 hari (Hari ini + 6 hari ke belakang)
     List<DateTime> dates = List.generate(7, (index) {
       return today.subtract(Duration(days: 6 - index));
     });
 
     return Row(
       children: [
-        // Tombol Kalender (Untuk pilih tanggal lama)
         IconButton(
           onPressed: () async {
             final picked = await showDatePicker(
               context: context,
               initialDate: _selectedDate,
-              firstDate: DateTime(2020),
+              firstDate: _registrationDate,
               lastDate: DateTime.now(),
             );
             if (picked != null) {
@@ -182,7 +198,6 @@ class _CycleEditScreenState extends State<CycleEditScreen> {
           icon: const Icon(Icons.calendar_today_rounded, color: AppColors.primary),
         ),
         const SizedBox(width: 8),
-        // List 7 Hari
         Expanded(
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -207,7 +222,7 @@ class _CycleEditScreenState extends State<CycleEditScreen> {
                     child: Column(
                       children: [
                         Text(
-                          DateFormat('E', 'id_ID').format(date), // Nama Hari (Sen, Sel)
+                          DateFormat('E', 'id_ID').format(date),
                           style: TextStyle(
                             fontSize: 12,
                             color: isSelected ? Colors.white : Colors.grey,
@@ -215,7 +230,7 @@ class _CycleEditScreenState extends State<CycleEditScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          DateFormat('dd').format(date), // Tanggal (05, 06)
+                          DateFormat('dd').format(date),
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -235,16 +250,17 @@ class _CycleEditScreenState extends State<CycleEditScreen> {
   }
 
   void _handleDateChange(DateTime newDate) {
-    // Validasi: Cek apakah tanggal sebelum user register
     if (newDate.isBefore(_registrationDate.subtract(const Duration(days: 1)))) {
-      // Tampilkan Popup jika belum ada data (sebelum register)
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
           title: const Text('Belum Ada Data'),
           content: const Text('Kamu belum bergabung dengan Femora pada tanggal ini.'),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK'))
+            TextButton(
+              onPressed: () => Navigator.pop(ctx), 
+              child: const Text('OK')
+            )
           ],
         ),
       );
@@ -257,13 +273,12 @@ class _CycleEditScreenState extends State<CycleEditScreen> {
     _loadDataFromFirebase();
   }
 
-  // 2. Mood Toggle (Seperti Gambar 2)
   Widget _buildMoodToggle() {
     return Row(
       children: [
-        _buildMoodPill('Baik', '😊', const Color(0xFFE040FB)), // Ungu/Pink seperti gambar
+        _buildMoodPill('Baik', '😊', const Color(0xFFE040FB)),
         const SizedBox(width: 16),
-        _buildMoodPill('Buruk', '😠', const Color(0xFFFF5722)), // Orange/Merah
+        _buildMoodPill('Buruk', '😠', const Color(0xFFFF5722)),
       ],
     );
   }
@@ -285,13 +300,16 @@ class _CycleEditScreenState extends State<CycleEditScreen> {
             borderRadius: BorderRadius.circular(30),
             border: Border.all(color: Colors.grey.shade200),
             boxShadow: isSelected ? [
-              BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))
+              BoxShadow(
+                color: AppColors.primary.withOpacity(0.3), 
+                blurRadius: 8, 
+                offset: const Offset(0, 4)
+              )
             ] : [],
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Lingkaran Emoji
               Container(
                 width: 32, height: 32,
                 decoration: BoxDecoration(
@@ -318,10 +336,61 @@ class _CycleEditScreenState extends State<CycleEditScreen> {
     );
   }
 
+  /// ✅ MENSTRUATION TOGGLE
+  Widget _buildMenstruationToggle() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(
+          color: _currentData.isMenstruating ? AppColors.primary : Colors.grey.shade200,
+          width: 2,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.water_drop,
+            color: _currentData.isMenstruating ? AppColors.primary : Colors.grey,
+            size: 28,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Sedang Menstruasi',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: _currentData.isMenstruating ? AppColors.primary : Colors.black87,
+              ),
+            ),
+          ),
+          Switch(
+            value: _currentData.isMenstruating,
+            onChanged: (value) {
+              setState(() {
+                _currentData.isMenstruating = value;
+              });
+            },
+            activeColor: AppColors.primary,
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
-      child: Text(title, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18, fontFamily: AppTextStyles.fontFamily)),
+      child: Text(
+        title, 
+        style: TextStyle(
+          fontWeight: FontWeight.w700, 
+          fontSize: 18, 
+          fontFamily: AppTextStyles.fontFamily
+        )
+      ),
     );
   }
 
@@ -330,16 +399,15 @@ class _CycleEditScreenState extends State<CycleEditScreen> {
     SizeConfig.init(context);
     
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA), // Background agak putih abu
+      backgroundColor: const Color(0xFFFAFAFA),
       body: SafeArea(
         child: Column(
           children: [
-            // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
               child: Row(children: [
                   CustomBackButton(onPressed: () => context.pop()),
-                  Expanded(
+                  const Expanded(
                     child: Center(
                       child: Text(
                         'Edit Siklus',
@@ -359,16 +427,18 @@ class _CycleEditScreenState extends State<CycleEditScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // DATE STRIP (Gambar 3)
                     _buildDateStrip(),
                     const SizedBox(height: 30),
 
-                    // MOOD TOGGLE (Gambar 2)
+                    // ✅ MENSTRUATION STATUS
+                    _buildSectionTitle('Status Menstruasi'),
+                    _buildMenstruationToggle(),
+                    const SizedBox(height: 30),
+
                     _buildSectionTitle('Suasana Hati'),
                     _buildMoodToggle(),
                     const SizedBox(height: 30),
 
-                    // GEJALA (Horizontal Scroll)
                     _buildSectionTitle('Gejala'),
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
@@ -396,7 +466,10 @@ class _CycleEditScreenState extends State<CycleEditScreen> {
                                     decoration: BoxDecoration(
                                       color: isSelected ? AppColors.primary : Colors.white,
                                       shape: BoxShape.circle,
-                                      border: Border.all(color: isSelected ? AppColors.primary : Colors.grey.shade300, width: 2),
+                                      border: Border.all(
+                                        color: isSelected ? AppColors.primary : Colors.grey.shade300, 
+                                        width: 2
+                                      ),
                                     ),
                                     child: Image.asset(
                                       symptom['path']!,
@@ -409,7 +482,10 @@ class _CycleEditScreenState extends State<CycleEditScreen> {
                                     child: Text(
                                       symptom['label']!,
                                       textAlign: TextAlign.center,
-                                      style: TextStyle(fontSize: 11, color: isSelected ? AppColors.primary : Colors.black),
+                                      style: TextStyle(
+                                        fontSize: 11, 
+                                        color: isSelected ? AppColors.primary : Colors.black
+                                      ),
                                     ),
                                   )
                                 ],
@@ -424,7 +500,6 @@ class _CycleEditScreenState extends State<CycleEditScreen> {
               ),
             ),
             
-            // Simpan Button
             Container(
               padding: const EdgeInsets.all(20),
               decoration: const BoxDecoration(color: Colors.white),

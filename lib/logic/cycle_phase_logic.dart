@@ -2,63 +2,134 @@ import 'package:femora/models/cycle_phase_data.dart';
 import 'package:femora/logic/prediction_logic.dart';
 
 class CyclePhaseLogic {
-  static CyclePhaseData getDynamicPhaseData(CyclePrediction prediction, DateTime today) {
+  /// Menghitung fase siklus dinamis berdasarkan prediksi dan data aktual
+  static CyclePhaseData getDynamicPhaseData(
+    CyclePrediction prediction, 
+    DateTime today,
+    {bool? isCurrentlyMenstruating}
+  ) {
     final todayNormalized = DateTime(today.year, today.month, today.day);
-
     final lastPeriodStart = prediction.lastPeriodStart;
     final periodLength = prediction.periodDuration;
-    final cycleLength = (prediction.minCycleLength + prediction.maxCycleLength) ~/ 2;
+    
+    // Gunakan rata-rata historis jika ada, jika tidak gunakan input setup
+    final cycleLength = prediction.averageCycleFromHistory > 0 
+        ? prediction.averageCycleFromHistory 
+        : (prediction.minCycleLength + prediction.maxCycleLength) ~/ 2;
 
     if (cycleLength <= 0 || periodLength <= 0) {
-      return CyclePhaseData.follicular.copyWith(subtitle: "Data siklus tidak lengkap", remainingTime: "-");
+      return CyclePhaseData.follicular.copyWith(
+        subtitle: "Data siklus tidak lengkap", 
+        remainingTime: "-"
+      );
     }
 
-    // 1. Calculation based on your provided formula
-    const lutealLength = 14;
-    final ovulationDay = cycleLength - lutealLength;
+    // PRIORITAS TERTINGGI: Jika sedang menstruasi HARI INI (dari daily checkin)
+    if (isCurrentlyMenstruating == true) {
+      // Hitung sisa hari menstruasi berdasarkan durasi default
+      final daysRemaining = periodLength - 1; // Hari ini adalah hari ke-1
+      return CyclePhaseData.menstrual.copyWith(
+        subtitle: "Folikular dalam",
+        remainingTime: "$daysRemaining hari",
+      );
+    }
+
+    // Hitung hari dalam siklus
     final currentDayInCycle = todayNormalized.difference(lastPeriodStart).inDays + 1;
 
-    // Handle cases where the cycle hasn't started yet (last period is in the future)
+    // Handle jika tanggal periode belum tiba
     if (currentDayInCycle <= 0) {
-       int daysUntilStart = currentDayInCycle.abs();
-       return CyclePhaseData.luteal.copyWith(subtitle: "Menstruasi dalam", remainingTime: "$daysUntilStart hari");
+      int daysUntilStart = currentDayInCycle.abs();
+      return CyclePhaseData.luteal.copyWith(
+        subtitle: "Menstruasi dalam", 
+        remainingTime: "$daysUntilStart hari"
+      );
     }
 
-    // 2. Define phase boundaries with a more realistic fertile window
+    // Define fase boundaries
+    const lutealLength = 14;
+    final ovulationDay = cycleLength - lutealLength;
     final menstrualEnd = periodLength;
-    final ovulationStart = ovulationDay - 2; // Expanded 5-day fertile window
+    final ovulationStart = ovulationDay - 2;
     final ovulationEnd = ovulationDay + 2;
     final follicularEnd = ovulationStart - 1;
 
-    // 3. Determine the current phase and calculate the countdown to the *next* phase
+    // CEK: Apakah masih dalam periode menstruasi?
     if (currentDayInCycle <= menstrualEnd) {
-      // Current: Menstrual -> Next: Follicular
       int daysToNextPhase = menstrualEnd - currentDayInCycle + 1;
       return CyclePhaseData.menstrual.copyWith(
-        subtitle: "Folikular dalam  ", // CORRECTED: Always points to the next phase
+        subtitle: "Folikular dalam",
         remainingTime: "$daysToNextPhase hari",
       );
-    } else if (currentDayInCycle <= follicularEnd) {
-      // Current: Follicular -> Next: Ovulation
+    } 
+    // CEK: Apakah dalam fase folikular?
+    else if (currentDayInCycle <= follicularEnd) {
       int daysToNextPhase = ovulationStart - currentDayInCycle;
       return CyclePhaseData.follicular.copyWith(
-        subtitle: "Ovulasi dalam  ",
+        subtitle: "Ovulasi dalam",
         remainingTime: "${daysToNextPhase >= 0 ? daysToNextPhase : 0} hari",
       );
-    } else if (currentDayInCycle <= ovulationEnd) {
-      // Current: Ovulation -> Next: Luteal
+    } 
+    // CEK: Apakah dalam fase ovulasi?
+    else if (currentDayInCycle <= ovulationEnd) {
       int daysToNextPhase = ovulationEnd - currentDayInCycle + 1;
       return CyclePhaseData.ovulation.copyWith(
-        subtitle: "Luteal dalam  ",
+        subtitle: "Luteal dalam",
         remainingTime: "${daysToNextPhase >= 0 ? daysToNextPhase : 0} hari",
       );
-    } else {
-      // Current: Luteal -> Next: Menstrual
+    } 
+    // CEK: Fase luteal
+    else {
       int daysToNextPhase = cycleLength - currentDayInCycle + 1;
+      
+      // Jika sudah melewati siklus normal, tandai sebagai "terlambat"
+      if (daysToNextPhase < 0) {
+        return CyclePhaseData.luteal.copyWith(
+          subtitle: "Menstruasi",
+          remainingTime: "Terlambat ${daysToNextPhase.abs()} hari",
+        );
+      }
+      
       return CyclePhaseData.luteal.copyWith(
-        subtitle: "Menstruasi dalam  ",
-        remainingTime: "${daysToNextPhase >= 0 ? daysToNextPhase : 0} hari",
+        subtitle: "Menstruasi dalam",
+        remainingTime: "$daysToNextPhase hari",
       );
+    }
+  }
+
+  /// Prediksi fase untuk tanggal tertentu (untuk kalender)
+  static CyclePhase predictPhaseForDate(
+    DateTime date,
+    CyclePrediction prediction,
+  ) {
+    final dateNormalized = DateTime(date.year, date.month, date.day);
+    final lastPeriodStart = prediction.lastPeriodStart;
+    final periodLength = prediction.periodDuration;
+    final cycleLength = prediction.averageCycleFromHistory > 0 
+        ? prediction.averageCycleFromHistory 
+        : (prediction.minCycleLength + prediction.maxCycleLength) ~/ 2;
+
+    final currentDayInCycle = dateNormalized.difference(lastPeriodStart).inDays + 1;
+
+    const lutealLength = 14;
+    final ovulationDay = cycleLength - lutealLength;
+    final menstrualEnd = periodLength;
+    final ovulationStart = ovulationDay - 2;
+    final ovulationEnd = ovulationDay + 2;
+    final follicularEnd = ovulationStart - 1;
+
+    if (currentDayInCycle <= 0 || currentDayInCycle > cycleLength) {
+      return CyclePhase.luteal; // Default jika di luar range
+    }
+
+    if (currentDayInCycle <= menstrualEnd) {
+      return CyclePhase.menstrual;
+    } else if (currentDayInCycle <= follicularEnd) {
+      return CyclePhase.follicular;
+    } else if (currentDayInCycle <= ovulationEnd) {
+      return CyclePhase.ovulation;
+    } else {
+      return CyclePhase.luteal;
     }
   }
 }
