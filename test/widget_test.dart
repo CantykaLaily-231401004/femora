@@ -6,13 +6,14 @@
 // tree, read text, and verify that the values of widget properties are correct.
 
 import 'package:femora/main.dart';
+import 'package:femora/services/cycle_data_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   testWidgets('App smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(MyApp(cycleDataService: CycleDataService()));
 
     // Verify that MaterialApp is present.
     expect(find.byType(MaterialApp), findsOneWidget);

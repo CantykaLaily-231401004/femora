@@ -1,0 +1,123 @@
+
+[
+  {
+    "id": "edu001",
+    "title": "Tutorial Pembalut Kain",
+    "content": "https://youtu.be/oxW8wfboBlo?si=POgp8bqNTUz5y50h",
+    "type": "video"
+  },
+  {
+    "id": "edu002",
+    "title": "Informasi Tablet Tambah Darah",
+    "content": "https://youtu.be/iPHFItslOHY?si=PQKQ6LuEIFMlMhBW",
+    "type": "video"
+  },
+  {
+    "id": "edu003",
+    "title": "Manajemen Kebersihan Menstruasi",
+    "content": "https://youtu.be/wc4ry6fXU_g?si=tgKlgDbLC86jIPOu",
+    "type": "video"
+  },
+  {
+    "id": "edu004",
+    "title": "Sakit saat menstruasi",
+    "content": "https://youtu.be/Q1V3pU0-bv0?si=7A44I4r2zZ0ewn0-",
+    "type": "video"
+  },
+  {
+    "id": "edu005",
+    "title": "Tanda Nyeri Menstruasi yang Tidak Normal",
+    "content": "https://youtu.be/xf8v2J4Mz-4?si=pTtAleMMlvIy8U6m",
+    "type": "video"
+  },
+  {
+    "id": "edu006",
+    "title": "Siklus Menstruasi",
+    "content": "https://youtu.be/dkoG5BJ6Ld0?si=itf29Eh_awcDuvKY",
+    "type": "video"
+  },
+  {
+    "id": "edu007",
+    "title": "5 Penyebab Menstruasi Tidak Teratur",
+    "content": "https://youtu.be/B0DI7czEkLE?si=4hjsLMkGyw99nXZI",
+    "type": "video"
+  },
+  {
+    "id": "edu008",
+    "title": "Menstruasi Dua Kali dalam Satu Bulan: Apakah Berbahaya?",
+    "content": "https://youtu.be/4PmpPHgxW-8?si=qDMM3zYKMrkgNYI3",
+    "type": "video"
+  },
+  {
+    "id": "edu009",
+    "title": "Proses siklus menstruasi dan ovulasi",
+    "content": "https://youtu.be/DcPb4Oki_Qs?si=9S5NIRgcvEGmd24U",
+    "type": "video"
+  },
+  {
+    "id": "edu010",
+    "title": "Haid Lebih dari 7 Hari? Kenali Penyebab dan Gejala Haid Berkepanjangan",
+    "content": "https://youtu.be/kFPvoFQYAvc?si=YL_OKTG3NaJUGDka",
+    "type": "video"
+  },
+  {
+    "id": "edu011",
+    "title": "Pembalut Kain, Ini Kelebihan dan Kekurangannya",
+    "content": "https://www.alodokter.com/pembalut-kain-ini-kelebihan-dan-kekurangannya",
+    "type": "article"
+  },
+  {
+    "id": "edu012",
+    "title": "Cegah Anemia Pada Remaja Putri dengan Tablet Tambah Darah",
+    "content": "https://ayosehat.kemkes.go.id/cegah-anemia-pada-remaja-putri-dengan-tablet-tambah-darah",
+    "type": "article"
+  },
+  {
+    "id": "edu013",
+    "title": "Manajemen Kebersihan Menstruasi Perlu Dipahami",
+    "content": "https://kemkes.go.id/id/manajemen-kebersihan-menstruasi-perlu-dipahami",
+    "type": "article"
+  },
+  {
+    "id": "edu014",
+    "title": "Dismenore (Nyeri Haid) – Gejala, Penyebab, dan Pengobatan",
+    "content": "https://www.alodokter.com/nyeri-haid",
+    "type": "article"
+  },
+  {
+    "id": "edu015",
+    "title": "Inilah Tanda-Tanda Nyeri Haid yang Tidak Normal",
+    "content": "https://www.halodoc.com/artikel/inilah-tanda-tanda-nyeri-haid-yang-tidak-normal",
+    "type": "article"
+  },
+  {
+    "id": "edu016",
+    "title": "Siklus Menstruasi, Ini Tahapan dan Hormon yang Berpengaruh",
+    "content": "https://www.halodoc.com/artikel/siklus-menstruasi-ini-tahapan-dan-hormon-yang-berpengaruh",
+    "type": "article"
+  },
+  {
+    "id": "edu017",
+    "title": "Kenapa Haid Tidak Teratur, Kenali 10 Penyebab dan Cara Mengatasinya",
+    "content": "https://www.alodokter.com/kenapa-haid-tidak-teratur-kenali-10-penyebab-dan-cara-mengatasinya",
+    "type": "article"
+  },
+  {
+    "id": "edu018",
+    "title": "Catat, Ini 5 Penyebab Haid Dua Kali Dalam Sebulan yang Perlu Diketahui",
+    "content": "https://www.halodoc.com/artikel/catat-ini-5-penyebab-haid-dua-kali-dalam-sebulan-yang-perlu-diketahui",
+    "type": "article"
+  },
+  {
+    "id": "edu019",
+    "title": "Siklus Menstruasi Wanita (Women Cycle)",
+    "content": "https://ciputrahospital.com/siklus-menstruasi-wanita/",
+    "type": "article"
+  },
+  {
+    "id": "edu020",
+    "title": "5 Penyebab Haid Lebih dari Seminggu dan Cara Menanganinya",
+    "content": "https://www.alodokter.com/haid-lebih-dari-seminggu-ini-penyebabnya",
+    "type": "article"
+  }
+]
