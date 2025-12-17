@@ -83,22 +83,7 @@ Perempuan usia reproduktif yang ingin:
 
 ## 🧩 Metodologi Pengembangan
 
-Pengembangan aplikasi **Femora** menggunakan model **Waterfall**, dengan tahapan sebagai berikut:
-
-1. **Requirement Analysis (SRS)**  
-   Pengumpulan dan analisis kebutuhan sistem berdasarkan kebutuhan pengguna serta penyusunan dokumen Software Requirements Specification (SRS).
-
-2. **UI/UX Design**  
-   Perancangan antarmuka dan pengalaman pengguna yang sederhana, intuitif, dan ramah pengguna menggunakan Figma.
-
-3. **Implementation**  
-   Implementasi aplikasi menggunakan Flutter dengan integrasi layanan Firebase sebagai backend.
-
-4. **Testing**  
-   Pengujian fungsionalitas aplikasi untuk memastikan seluruh fitur berjalan sesuai dengan kebutuhan yang telah ditetapkan.
-
-5. **Deployment & Maintenance**  
-   Pendistribusian aplikasi serta pemeliharaan sistem untuk memastikan kestabilan dan keberlanjutan aplikasi.
+Pengembangan aplikasi **Femora** menggunakan model **Agile**
 
 ---
 ## 📄 Dokumen Pendukung
