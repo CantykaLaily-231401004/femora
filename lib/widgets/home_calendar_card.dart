@@ -9,6 +9,8 @@ class HomeCalendarCard extends StatelessWidget {
   final VoidCallback onEditCycle;
   final CyclePrediction prediction;
   final String? Function(DateTime) getMoodForDay;
+  // ✅ Parameter baru untuk marker menstruasi
+  final Widget? Function(DateTime)? getMenstruationMarker;
 
   const HomeCalendarCard({
     Key? key,
@@ -18,6 +20,7 @@ class HomeCalendarCard extends StatelessWidget {
     required this.onEditCycle,
     required this.prediction,
     required this.getMoodForDay,
+    this.getMenstruationMarker, // Tambahkan di konstruktor
   }) : super(key: key);
 
   @override
@@ -47,6 +50,8 @@ class HomeCalendarCard extends StatelessWidget {
             onDaySelected: onDaySelected,
             prediction: prediction,
             getMoodForDay: getMoodForDay,
+            // ✅ Teruskan ke CustomCalendar
+            getMenstruationMarker: getMenstruationMarker,
           ),
           const SizedBox(height: 15),
           Row(

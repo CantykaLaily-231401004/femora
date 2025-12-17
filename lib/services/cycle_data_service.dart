@@ -35,25 +35,18 @@ class CycleDataService {
 
   String? get userId => _auth.currentUser?.uid;
 
-  // ========== CLEAR DATA SAAT LOGOUT (PENTING!) ==========
   void clearAllData() {
     debugPrint('🧹 CLEARING ALL DATA...');
-
-    // Clear notifiers
     cycleDataNotifier.value = null;
     userNameNotifier.value = null;
     birthDateNotifier.value = null;
     weightNotifier.value = null;
     phoneNumberNotifier.value = null;
     dailyMoodNotifier.value = {};
-
-    // Clear temp data
     _clearTempData();
-
     debugPrint('✅ All data cleared!');
   }
 
-  // ========== SETUP FLOW METHODS ==========
   void setFullName(String name) {
     debugPrint('📝 Setting full name: $name');
     _tempFullName = name;
@@ -74,11 +67,9 @@ class CycleDataService {
 
   Future<void> finalizeData() async {
     if (userId == null) throw Exception('User not authenticated');
-
     debugPrint('💾 Finalizing data for user: $userId');
 
     try {
-      // Save user profile
       await _firestore.collection('users').doc(userId).set({
         'fullName': _tempFullName,
         'birthDate': _tempBirthDate != null ? Timestamp.fromDate(_tempBirthDate!) : null,
@@ -87,25 +78,24 @@ class CycleDataService {
         'createdAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
-      // Save cycle data
       if (_tempLastPeriodStart != null && _tempPeriodDuration != null) {
-        final cycleData = CycleData(
-          lastPeriodStart: _tempLastPeriodStart!,
-          periodDuration: _tempPeriodDuration!,
-          minCycleLength: _tempMinCycleLength!,
-          maxCycleLength: _tempMaxCycleLength!,
-          isRegular: _tempIsRegular!,
-        );
+        // ✅ Konversi ke Map<String, dynamic> dan pastikan Timestamp
+        final cycleDataMap = {
+          'lastPeriodStart': Timestamp.fromDate(_tempLastPeriodStart!),
+          'periodDuration': _tempPeriodDuration!,
+          'minCycleLength': _tempMinCycleLength!,
+          'maxCycleLength': _tempMaxCycleLength!,
+          'isRegular': _tempIsRegular!,
+        };
 
         await _firestore.collection('users').doc(userId).update({
-          'cycleData': cycleData.toJson(),
+          'cycleData': cycleDataMap,
         });
 
-        cycleDataNotifier.value = cycleData;
+        cycleDataNotifier.value = CycleData.fromJson(cycleDataMap);
         debugPrint('✅ Cycle data saved!');
       }
 
-      // Update local notifiers
       userNameNotifier.value = _tempFullName;
       birthDateNotifier.value = _tempBirthDate;
       weightNotifier.value = _tempWeight;
@@ -131,29 +121,18 @@ class CycleDataService {
     _tempLastPeriodStart = null;
   }
 
-  // ========== LOAD DATA DARI FIREBASE ==========
   Future<void> loadUserData() async {
-    if (userId == null) {
-      debugPrint('⚠️ Cannot load user data: userId is null');
-      return;
-    }
-
+    if (userId == null) return;
     debugPrint('📥 Loading user data for: $userId');
 
     try {
       final doc = await _firestore.collection('users').doc(userId).get();
-
-      if (!doc.exists) {
-        debugPrint('⚠️ User document does not exist');
-        return;
-      }
+      if (!doc.exists) return;
 
       final data = doc.data()!;
 
       userNameNotifier.value = data['fullName'];
-      birthDateNotifier.value = data['birthDate'] != null
-          ? (data['birthDate'] as Timestamp).toDate()
-          : null;
+      birthDateNotifier.value = data['birthDate'] != null ? (data['birthDate'] as Timestamp).toDate() : null;
       weightNotifier.value = data['weight'];
       phoneNumberNotifier.value = data['phoneNumber'];
 
@@ -168,68 +147,44 @@ class CycleDataService {
     }
   }
 
-  // ========== UPDATE USER PROFILE ==========
   Future<void> updateUserName(String newName) async {
-    if (userId == null) throw Exception('User not authenticated');
-
-    await _firestore.collection('users').doc(userId).update({
-      'fullName': newName,
-    });
+    if (userId == null) return;
+    await _firestore.collection('users').doc(userId).update({'fullName': newName});
     userNameNotifier.value = newName;
   }
 
   Future<void> updateBirthDate(DateTime newDate) async {
-    if (userId == null) throw Exception('User not authenticated');
-
-    await _firestore.collection('users').doc(userId).update({
-      'birthDate': Timestamp.fromDate(newDate),
-    });
+    if (userId == null) return;
+    await _firestore.collection('users').doc(userId).update({'birthDate': Timestamp.fromDate(newDate)});
     birthDateNotifier.value = newDate;
   }
 
   Future<void> updateWeight(int newWeight) async {
-    if (userId == null) throw Exception('User not authenticated');
-
-    await _firestore.collection('users').doc(userId).update({
-      'weight': newWeight,
-    });
+    if (userId == null) return;
+    await _firestore.collection('users').doc(userId).update({'weight': newWeight});
     weightNotifier.value = newWeight;
   }
 
   Future<void> updatePhoneNumber(String newPhoneNumber) async {
-    if (userId == null) throw Exception('User not authenticated');
-
-    await _firestore.collection('users').doc(userId).update({
-      'phoneNumber': newPhoneNumber,
-    });
+    if (userId == null) return;
+    await _firestore.collection('users').doc(userId).update({'phoneNumber': newPhoneNumber});
     phoneNumberNotifier.value = newPhoneNumber;
   }
 
-  // ========== UPDATE CYCLE DATA ==========
   Future<void> updateCycleData(CycleData newCycleData) async {
-    if (userId == null) throw Exception('User not authenticated');
-
-    await _firestore.collection('users').doc(userId).update({
-      'cycleData': newCycleData.toJson(),
-    });
+    if (userId == null) return;
+    await _firestore.collection('users').doc(userId).update({'cycleData': newCycleData.toJson()});
     cycleDataNotifier.value = newCycleData;
   }
 
-  // ========== DAILY CHECK-IN ==========
   Future<void> saveDailyLog(DailyLogModel log) async {
-    if (userId == null) throw Exception('User not authenticated');
-
+    if (userId == null) return;
     try {
-      await _firestore
-          .collection('daily_logs')
-          .doc(log.id)
-          .set(log.toMap());
-
+      await _firestore.collection('daily_logs').doc(log.id).set(log.toMap());
       final normalizedDay = DateTime(log.date.year, log.date.month, log.date.day);
       final currentMoods = Map<DateTime, String>.from(dailyMoodNotifier.value);
       currentMoods[normalizedDay] = log.mood;
       dailyMoodNotifier.value = currentMoods;
-
       debugPrint('✅ Daily log saved: ${log.id}');
     } catch (e) {
       debugPrint('❌ Error saving daily log: $e');
@@ -239,20 +194,12 @@ class CycleDataService {
 
   Future<bool> hasCheckedInToday() async {
     if (userId == null) return false;
-
     final today = DateTime.now();
     final startOfDay = DateTime(today.year, today.month, today.day);
     final endOfDay = startOfDay.add(const Duration(days: 1));
 
     try {
-      final snapshot = await _firestore
-          .collection('daily_logs')
-          .where('userId', isEqualTo: userId)
-          .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
-          .where('date', isLessThan: Timestamp.fromDate(endOfDay))
-          .limit(1)
-          .get();
-
+      final snapshot = await _firestore.collection('daily_logs').where('userId', isEqualTo: userId).where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay)).where('date', isLessThan: Timestamp.fromDate(endOfDay)).limit(1).get();
       return snapshot.docs.isNotEmpty;
     } catch (e) {
       debugPrint('Error checking daily log: $e');
@@ -267,25 +214,17 @@ class CycleDataService {
 
   Future<void> loadMoodsForMonth(DateTime month) async {
     if (userId == null) return;
-
     final startOfMonth = DateTime(month.year, month.month, 1);
     final endOfMonth = DateTime(month.year, month.month + 1, 0);
 
     try {
-      final snapshot = await _firestore
-          .collection('daily_logs')
-          .where('userId', isEqualTo: userId)
-          .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
-          .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endOfMonth))
-          .get();
-
+      final snapshot = await _firestore.collection('daily_logs').where('userId', isEqualTo: userId).where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth)).where('date', isLessThanOrEqualTo: Timestamp.fromDate(endOfMonth)).get();
       final moodMap = <DateTime, String>{};
       for (var doc in snapshot.docs) {
         final log = DailyLogModel.fromFirestore(doc);
         final normalizedDate = DateTime(log.date.year, log.date.month, log.date.day);
         moodMap[normalizedDate] = log.mood;
       }
-
       dailyMoodNotifier.value = {...dailyMoodNotifier.value, ...moodMap};
     } catch (e) {
       debugPrint('Error loading moods: $e');

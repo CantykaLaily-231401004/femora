@@ -14,6 +14,7 @@ class CustomCalendar extends StatelessWidget {
   final String? locale;
   final CyclePrediction? prediction;
   final String? Function(DateTime) getMoodForDay;
+  final Widget? Function(DateTime)? getMenstruationMarker;
 
   const CustomCalendar({
     Key? key,
@@ -26,6 +27,7 @@ class CustomCalendar extends StatelessWidget {
     this.locale,
     this.prediction,
     required this.getMoodForDay,
+    this.getMenstruationMarker,
   }) : super(key: key);
 
   @override
@@ -53,7 +55,6 @@ class CustomCalendar extends StatelessWidget {
         calendarFormat: calendarFormat,
         onDaySelected: onDaySelected,
         onFormatChanged: onFormatChanged,
-        // The selectedDayPredicate now only checks for today's date.
         selectedDayPredicate: (day) => isSameDay(DateTime.now(), day),
         calendarBuilders: CalendarBuilders(
           markerBuilder: (context, day, events) {
@@ -68,7 +69,57 @@ class CustomCalendar extends StatelessWidget {
             return null;
           },
           prioritizedBuilder: (context, day, focusedDay) {
-            // Prioritas 1: Hari Ini (Selalu diutamakan)
+            // Prioritas 1: Marker Menstruasi Aktual (dari check-in)
+            final actualMenstruationMarker = getMenstruationMarker?.call(day);
+            if (actualMenstruationMarker != null) {
+              return Stack(
+                alignment: Alignment.center,
+                children: [
+                  actualMenstruationMarker,
+                  Text('${day.day}', style: const TextStyle(color: Colors.white)),
+                ],
+              );
+            }
+
+            // Prioritas 2: Prediksi dan Menstruasi Terakhir dari Setup Awal
+            if (prediction != null) {
+              // Gambar menstruasi terakhir (dari setup)
+              final lastPeriodEnd = prediction!.lastPeriodStart.add(Duration(days: prediction!.periodDuration - 1));
+              if (!day.isBefore(prediction!.lastPeriodStart) && !day.isAfter(lastPeriodEnd)) {
+                return Container(
+                  margin: const EdgeInsets.all(4.0),
+                  alignment: Alignment.center,
+                  decoration: const BoxDecoration(
+                    color: AppColors.primary, // Merah solid untuk data histori
+                    shape: BoxShape.circle,
+                  ),
+                  child: Text(
+                    '${day.day}',
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                );
+              }
+
+              // Gambar prediksi periode berikutnya
+              if (prediction!.predictedPeriodStart != null && prediction!.predictedPeriodEnd != null) {
+                if (!day.isBefore(prediction!.predictedPeriodStart!) && !day.isAfter(prediction!.predictedPeriodEnd!)) {
+                  return Container(
+                    margin: const EdgeInsets.all(4.0),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.4), // Pink transparan untuk prediksi
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(
+                      '${day.day}',
+                      style: const TextStyle(color: Colors.black87),
+                    ),
+                  );
+                }
+              }
+            }
+
+            // Prioritas 3: Hari Ini (jika bukan hari menstruasi atau prediksi)
             if (isSameDay(day, DateTime.now())) {
               return Center(
                 child: Text(
@@ -81,48 +132,7 @@ class CustomCalendar extends StatelessWidget {
               );
             }
 
-            // Prioritas 2: Do not show a selected day circle on other dates.
-            // The logic for the selected day circle has been removed.
-
-            if (prediction != null) {
-              // Prioritas 3: Periode Menstruasi Terakhir
-              final lastPeriodEnd = prediction!.lastPeriodStart.add(Duration(days: prediction!.periodDuration - 1));
-              if (!day.isBefore(prediction!.lastPeriodStart) && !day.isAfter(lastPeriodEnd)) {
-                return Container(
-                  margin: const EdgeInsets.all(4.0),
-                  alignment: Alignment.center,
-                  decoration: const BoxDecoration(
-                    color: AppColors.primary,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Text(
-                    '${day.day}',
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                );
-              }
-
-              // Prioritas 4: Periode Prediksi
-              if (prediction!.predictedPeriodStart != null && prediction!.predictedPeriodEnd != null) {
-                if (!day.isBefore(prediction!.predictedPeriodStart!) && !day.isAfter(prediction!.predictedPeriodEnd!)) {
-                  return Container(
-                    margin: const EdgeInsets.all(4.0),
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.4),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Text(
-                      '${day.day}',
-                      style: const TextStyle(color: Colors.black87),
-                    ),
-                  );
-                }
-              }
-            }
-
-            // Jika tidak ada aturan yang cocok, kembalikan null
-            return null;
+            return null; // Tampilan default
           },
         ),
         headerStyle: HeaderStyle(
@@ -146,7 +156,6 @@ class CustomCalendar extends StatelessWidget {
           ),
         ),
         calendarStyle: CalendarStyle(
-          // Kosongkan gaya yang berpotensi konflik
           selectedDecoration: const BoxDecoration(),
           todayDecoration: const BoxDecoration(),
           defaultTextStyle: TextStyle(

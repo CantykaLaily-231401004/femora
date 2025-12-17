@@ -142,13 +142,11 @@ class _LastPeriodScreenState extends State<LastPeriodScreen> {
               child: PrimaryButton(
                 text: 'Selesai',
                 onPressed: () {
-                  // Simpan data terakhir ke 'brankas'
-                  CycleDataService().setLastPeriodStart(_rangeStart ?? DateTime.now());
+                  // ✅ Kembalikan ke DateTime, karena service mengharapkan itu.
+                  final lastPeriodDateTime = _rangeStart ?? DateTime.now();
 
-                  // Kunci semua data yang sudah disimpan
+                  CycleDataService().setLastPeriodStart(lastPeriodDateTime);
                   CycleDataService().finalizeData();
-
-                  // Navigasi ke home. HomeScreen akan mengambil data dari brankas.
                   context.go('/home');
                 },
               ),
