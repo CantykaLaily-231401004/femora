@@ -43,6 +43,7 @@ flutter:
     - assets/images/
     - assets/icon/
     - assets/sounds/
+    - assets/education_materials.json
 
   fonts:
     - family: Nunito
