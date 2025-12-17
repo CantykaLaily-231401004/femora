@@ -27,7 +27,8 @@ class _HomeScreenState extends State<HomeScreen> {
   
   Map<DateTime, bool> _menstruationMarkers = {};
   CyclePrediction? _dynamicPrediction;
-  bool? _isCurrentlyMenstruating; // Status menstruasi hari ini
+  bool? _isCurrentlyMenstruating;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -36,18 +37,15 @@ class _HomeScreenState extends State<HomeScreen> {
     _focusedDay = now;
     _selectedDay = now;
 
-    // Listen to data changes
-    _cycleDataService.dailyMoodNotifier.addListener(_onDataChanged);
     _cycleDataService.cycleDataNotifier.addListener(_onDataChanged);
 
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await _loadAllData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadAllData();
     });
   }
 
   @override
   void dispose() {
-    _cycleDataService.dailyMoodNotifier.removeListener(_onDataChanged);
     _cycleDataService.cycleDataNotifier.removeListener(_onDataChanged);
     super.dispose();
   }
@@ -60,6 +58,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadAllData() async {
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+
     debugPrint('📥 Loading all data...');
     
     await _cycleDataService.loadUserData();
@@ -75,6 +76,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _isCurrentlyMenstruating = isMenstruating;
         _menstruationMarkers = newMarkers;
         _dynamicPrediction = newPrediction;
+        _isLoading = false;
       });
       
       debugPrint('✅ All data loaded successfully');
@@ -185,7 +187,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _loadAllData();
       });
     } else {
-      context.push(AppRoutes.cycleEdit, extra: selectedDay).then((_) {
+      context.push(AppRoutes.editCycle, extra: selectedDay).then((_) {
         debugPrint('🔄 Cycle edited, reloading data...');
         _loadAllData();
       });
@@ -208,7 +210,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _onEditCycle() {
-    context.push(AppRoutes.cycleEdit, extra: DateTime.now()).then((_) {
+    context.push(AppRoutes.editCycle, extra: DateTime.now()).then((_) {
       debugPrint('🔄 Cycle edited, reloading data...');
       _loadAllData();
     });
