@@ -6,6 +6,7 @@ import 'package:femora/screens/auth/password_success_screen.dart';
 import 'package:femora/screens/auth/register_screen.dart';
 import 'package:femora/screens/auth/reset_password_screen.dart';
 import 'package:femora/screens/auth/signup_screen.dart';
+import 'package:femora/screens/cycle/edit_cycle_screen.dart';
 import 'package:femora/screens/education/education_screen.dart';
 import 'package:femora/screens/home/home_screen.dart';
 import 'package:femora/screens/onboarding/onboarding_screen.dart';
@@ -13,7 +14,6 @@ import 'package:femora/screens/profile/alarm_screen.dart';
 import 'package:femora/screens/profile/change_password_screen.dart';
 import 'package:femora/screens/profile/cycle_edit_screen.dart';
 import 'package:femora/screens/profile/cycle_history_detail_screen.dart';
-import 'package:femora/screens/profile/edit_cycle_screen.dart';
 import 'package:femora/screens/profile/edit_phone_number_screen.dart';
 import 'package:femora/screens/profile/help_screen.dart';
 import 'package:femora/screens/profile/history_screen.dart';
@@ -209,7 +209,9 @@ class AppRouter {
         ),
         GoRoute(
           path: AppRoutes.editCycle,
-          builder: (context, state) => const EditCycleScreen(),
+          builder: (context, state) => EditCycleScreen(
+            initialDate: state.extra as DateTime?,
+          ),
         ),
         GoRoute(
           path: AppRoutes.alarm,
